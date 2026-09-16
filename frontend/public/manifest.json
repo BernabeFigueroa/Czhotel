@@ -1,0 +1,16 @@
+{
+  "short_name": "Auditoría Motel",
+  "name": "Control de Turnos - 18 Habitaciones",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F172A",
+  "theme_color": "#1E293B",
+  "display": "standalone",
+  "orientation": "portrait"
+}
