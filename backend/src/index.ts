@@ -57,6 +57,20 @@ async function bootstrap() {
   app.listen(env.PORT, () => {
     console.log(`🌐 Servidor HTTP corriendo en http://localhost:${env.PORT}`);
     console.log(`🩺 Health check disponible en http://localhost:${env.PORT}/health`);
+
+    // Keep-alive loop para evitar suspensión por inactividad (cada 9 min)
+    const keepAliveUrl = process.env.RENDER_EXTERNAL_URL
+      ? `${process.env.RENDER_EXTERNAL_URL}/health`
+      : 'https://czhotel.onrender.com/health';
+
+    setInterval(async () => {
+      try {
+        await fetch(keepAliveUrl);
+        console.log(`[KeepAlive] Ping ejecutado a ${keepAliveUrl}`);
+      } catch (err: any) {
+        console.warn('[KeepAlive] Error en ping:', err.message);
+      }
+    }, 9 * 60 * 1000);
   });
 
   // Manejo de apagado elegante

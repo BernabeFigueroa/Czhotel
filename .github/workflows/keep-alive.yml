@@ -1,0 +1,16 @@
+name: Keep Alive Backend Render
+
+on:
+  schedule:
+    # Se ejecuta cada 10 minutos
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render Health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send HTTP Ping
+        run: |
+          curl -s -f -m 30 https://czhotel.onrender.com/health || echo "Ping failed or server waking up"
