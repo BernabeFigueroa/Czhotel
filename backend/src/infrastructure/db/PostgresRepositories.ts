@@ -28,9 +28,7 @@ export class PostgresRoomRepository implements IRoomRepository {
   }
 
   async findAllWithTodayCounts(): Promise<Room[]> {
-    const today = new Intl.DateTimeFormat('en-CA', { 
-      timeZone: 'America/Argentina/Buenos_Aires' 
-    }).format(new Date());
+    const today = Shift.toArgentinaDateString(new Date());
 
     const query = `
       SELECT 
@@ -43,7 +41,7 @@ export class PostgresRoomRepository implements IRoomRepository {
         COALESCE(h.precio_base, 12000)::numeric AS precio_base,
         COALESCE(COUNT(t.id), 0)::int AS turnos_hoy_count
       FROM habitaciones h
-      LEFT JOIN turnos t ON t.habitacion_id = h.id AND t.fecha = $1 AND t.tipo = 'TURNO'
+      LEFT JOIN turnos t ON t.habitacion_id = h.id AND t.fecha = $1::date AND t.tipo = 'TURNO'
       GROUP BY h.id
       ORDER BY h.id ASC;
     `;
@@ -111,9 +109,9 @@ export class PostgresShiftRepository implements IShiftRepository {
 
   async findByDate(fecha: string): Promise<Shift[]> {
     const res = await this.pool.query(
-      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo 
+      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha::text, tipo 
        FROM turnos 
-       WHERE fecha = $1 
+       WHERE fecha = $1::date 
        ORDER BY hora_inicio ASC`,
       [fecha]
     );
@@ -130,9 +128,9 @@ export class PostgresShiftRepository implements IShiftRepository {
 
   async findByRoomAndDate(habitacionId: number, fecha: string): Promise<Shift[]> {
     const res = await this.pool.query(
-      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo 
+      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha::text, tipo 
        FROM turnos 
-       WHERE habitacion_id = $1 AND fecha = $2 
+       WHERE habitacion_id = $1 AND fecha = $2::date 
        ORDER BY hora_inicio ASC`,
       [habitacionId, fecha]
     );

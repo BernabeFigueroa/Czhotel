@@ -652,20 +652,147 @@ button {
 }
 
 .estela-header {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+}
+
+.estela-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .estela-title {
   font-family: var(--font-body);
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
+  margin: 0;
 }
 
 .estela-date {
   color: var(--ink-soft);
   font-size: 0.95rem;
-  margin-top: 2px;
+  margin-top: 3px;
   text-transform: capitalize;
+  font-weight: 500;
+}
+
+.estela-badge-total {
+  background: var(--paper-panel);
+  border: 1px solid var(--paper-line);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.estela-total-num {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.estela-total-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Barra de control y navegación de fechas */
+.estela-datebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper-panel);
+  border: 1px solid var(--paper-line);
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-top: 14px;
+}
+
+.estela-quick-filters {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.estela-pill-btn {
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 9px;
+  transition: all 0.15s ease-in-out;
+}
+
+.estela-pill-btn:hover {
+  border-color: var(--ink-soft);
+}
+
+.estela-pill-btn.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+.estela-picker-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.estela-picker-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.estela-date-input {
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  border-radius: 9px;
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.estela-back-today-btn {
+  background: var(--brass);
+  color: var(--brass-ink);
+  border: none;
+  border-radius: 9px;
+  padding: 8px 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  transition: filter 0.15s;
+}
+
+.estela-back-today-btn:hover {
+  filter: brightness(1.1);
+}
+
+.estela-historical-notice {
+  background: #FFF8E1;
+  border: 1px solid #FFE082;
+  color: #5D4037;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  margin-top: 12px;
+  line-height: 1.4;
 }
 
 .estela-list {
@@ -773,6 +900,51 @@ button {
   font-size: 1rem;
   opacity: 0.85;
   padding: 6px 0;
+}
+
+/* Modo auditoría histórica de días cerrados */
+.estela-card-past {
+  background: #FFFFFF;
+  color: var(--ink);
+  border: 1px solid var(--paper-line);
+}
+
+.estela-card-past.has-turns {
+  border-left: 5px solid var(--brass);
+}
+
+.estela-card-past .estela-room-num {
+  color: var(--ink);
+}
+
+.estela-card-past .estela-room-status {
+  background: var(--paper-panel);
+  color: var(--ink-soft);
+}
+
+.estela-card-past .estela-room-count {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.estela-card-past .estela-turns {
+  border-top: 1px solid var(--paper-line);
+}
+
+.estela-card-past .estela-turn {
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.estela-card-past .estela-turn-time {
+  color: var(--ink);
+}
+
+.estela-card-past .estela-turn-items {
+  color: var(--ink-soft);
+}
+
+.estela-card-past .estela-empty-turns {
+  color: var(--ink-soft);
 }
 
 @keyframes fadeIn {

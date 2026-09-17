@@ -10,6 +10,9 @@ export const App: React.FC = () => {
     products,
     shifts,
     consumptions,
+    selectedDate,
+    setSelectedDate,
+    todayDate,
     adjustStock,
     addProduct,
     addConsumptionToRoom,
@@ -41,7 +44,13 @@ export const App: React.FC = () => {
   return (
     <div className="app-shell min-h-screen">
       {isEstela ? (
-        <EstelaView rooms={rooms} shifts={shifts} />
+        <EstelaView 
+          rooms={rooms} 
+          shifts={shifts} 
+          selectedDate={selectedDate}
+          todayDate={todayDate}
+          onSelectDate={setSelectedDate}
+        />
       ) : (
         <StaffView
           rooms={rooms}

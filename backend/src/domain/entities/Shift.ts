@@ -25,4 +25,11 @@ export class Shift {
   public static isOvertime(durationMinutes: number): boolean {
     return durationMinutes > 120;
   }
+
+  // Formateador estándar de fecha contable en zona horaria de Argentina (YYYY-MM-DD)
+  public static toArgentinaDateString(date: Date): string {
+    return new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'America/Argentina/Buenos_Aires' 
+    }).format(date);
+  }
 }

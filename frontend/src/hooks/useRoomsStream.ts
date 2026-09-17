@@ -21,6 +21,12 @@ const INITIAL_PRODUCTS: ProductDTO[] = [
   { id: 6, nombre: 'Vino', precio: 7800, stock: 20 },
 ];
 
+function getTodayArgentina(): string {
+  return new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'America/Argentina/Buenos_Aires' 
+  }).format(new Date());
+}
+
 export function useRoomsStream() {
   const [rooms, setRooms] = useState<RoomDTO[]>(INITIAL_ROOMS);
   const [products, setProducts] = useState<ProductDTO[]>(INITIAL_PRODUCTS);
@@ -28,6 +34,7 @@ export function useRoomsStream() {
   const [consumptions, setConsumptions] = useState<Record<number, RoomConsumptionDTO>>({});
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayArgentina);
 
   // 1. Cargar habitaciones
   const fetchRooms = useCallback(async () => {
@@ -59,10 +66,11 @@ export function useRoomsStream() {
     }
   }, []);
 
-  // 3. Cargar turnos de hoy
-  const fetchShifts = useCallback(async () => {
+  // 3. Cargar turnos por fecha (por defecto la fecha seleccionada)
+  const fetchShifts = useCallback(async (targetDate?: string) => {
+    const dateToFetch = targetDate || selectedDate;
     try {
-      const res = await fetch('/api/shifts/today');
+      const res = await fetch(`/api/shifts?date=${dateToFetch}`);
       if (res.ok) {
         const data: ShiftDTO[] = await res.json();
         if (Array.isArray(data)) {
@@ -72,7 +80,7 @@ export function useRoomsStream() {
     } catch (err) {
       console.error('[RoomsStream] Error turnos:', err);
     }
-  }, []);
+  }, [selectedDate]);
 
   // 4. Cargar consumos de una habitación ocupada
   const fetchRoomConsumption = useCallback(async (roomId: number) => {
@@ -170,11 +178,35 @@ export function useRoomsStream() {
     return null;
   };
 
+  // Detección automática del cruce de medianoche en Argentina (00:00 hs)
+  // Limpia la grilla automáticamente al cambiar el día y carga el nuevo día
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const currentToday = getTodayArgentina();
+      setSelectedDate((prevDate) => {
+        // Si el usuario estaba viendo el día de hoy y el reloj cruzó las 00:00 hs
+        if (prevDate !== currentToday) {
+          fetchShifts(currentToday);
+          fetchRooms();
+          return currentToday;
+        }
+        return prevDate;
+      });
+    }, 15000);
+
+    return () => clearInterval(timer);
+  }, [fetchShifts, fetchRooms]);
+
+  // Cargar turnos cada vez que cambia la fecha seleccionada
+  useEffect(() => {
+    fetchShifts(selectedDate);
+  }, [selectedDate, fetchShifts]);
+
   // Inicialización y SSE
   useEffect(() => {
     fetchRooms();
     fetchProducts();
-    fetchShifts();
+    fetchShifts(selectedDate);
 
     let eventSource: EventSource | null = null;
     try {
@@ -206,7 +238,7 @@ export function useRoomsStream() {
               })
             );
             if (nuevoEstado === 'LIMPIANDO' || nuevoEstado === 'LIBRE') {
-              fetchShifts();
+              fetchShifts(selectedDate);
             }
           } else if (payload.type === 'STOCK_UPDATED') {
             const updatedProd: ProductDTO = payload.data;
@@ -241,17 +273,17 @@ export function useRoomsStream() {
       console.warn('[SSE] EventSource no disponible o falló:', e);
     }
 
-    // Polling fallback cada 15s para máxima robustez en Safari y conexiones lentas
+    // Polling fallback cada 15s para máxima robustez en Safari y conexiones móviles
     const interval = setInterval(() => {
       fetchRooms();
-      fetchShifts();
+      fetchShifts(selectedDate);
     }, 15000);
 
     return () => {
       if (eventSource) eventSource.close();
       clearInterval(interval);
     };
-  }, [fetchRooms, fetchProducts, fetchShifts]);
+  }, [fetchRooms, fetchProducts, fetchShifts, selectedDate]);
 
   // Actualizar consumos cuando cambian las habitaciones
   useEffect(() => {
@@ -260,6 +292,8 @@ export function useRoomsStream() {
     }
   }, [rooms, fetchAllOccupiedConsumptions]);
 
+  const todayDate = getTodayArgentina();
+
   return {
     rooms,
     products,
@@ -267,6 +301,10 @@ export function useRoomsStream() {
     consumptions,
     isConnected,
     error,
+    selectedDate,
+    setSelectedDate,
+    todayDate,
+    isToday: selectedDate === todayDate,
     adjustStock,
     addProduct,
     addConsumptionToRoom,

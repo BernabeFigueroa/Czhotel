@@ -56,9 +56,7 @@ export function createHttpServer(
           const inicio = room.turnoActualInicio ? new Date(room.turnoActualInicio) : now;
           const duracion = Shift.calculateDurationMinutes(inicio, now);
           const tipo = Shift.classify(duracion);
-          const fechaBase = new Intl.DateTimeFormat('en-CA', { 
-            timeZone: 'America/Argentina/Buenos_Aires' 
-          }).format(inicio);
+          const fechaBase = Shift.toArgentinaDateString(inicio);
 
           const shift = await shiftRepo.createShift({
             habitacionId: roomId,
@@ -194,14 +192,15 @@ export function createHttpServer(
     }
   });
 
-  // Turnos de hoy con desglose de consumos (ideal para la vista de Estela)
-  app.get('/api/shifts/today', async (req, res) => {
+  // Turnos por fecha con desglose de consumos (ideal para la vista de Estela)
+  // Admite query param ?date=YYYY-MM-DD (por defecto, día actual de Argentina)
+  const handleGetShifts = async (req: express.Request, res: express.Response) => {
     try {
-      const today = new Intl.DateTimeFormat('en-CA', { 
-        timeZone: 'America/Argentina/Buenos_Aires' 
-      }).format(new Date());
+      const dateParam = typeof req.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)
+        ? req.query.date
+        : Shift.toArgentinaDateString(new Date());
 
-      const shifts = await shiftRepo.findByDate(today);
+      const shifts = await shiftRepo.findByDate(dateParam);
       const shiftIds = shifts.map((s) => s.id);
       const consumptionsMap = await productRepo.getConsumptionsForShifts(shiftIds);
 
@@ -211,7 +210,7 @@ export function createHttpServer(
         horaInicio: s.horaInicio.toISOString(),
         horaFin: s.horaFin.toISOString(),
         duracionMinutos: s.duracionMinutos,
-        fecha: s.fecha,
+        fecha: typeof s.fecha === 'string' ? s.fecha : dateParam,
         tipo: s.tipo,
         items: consumptionsMap.get(s.id) || []
       }));
@@ -220,7 +219,10 @@ export function createHttpServer(
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
-  });
+  };
+
+  app.get('/api/shifts', handleGetShifts);
+  app.get('/api/shifts/today', handleGetShifts);
 
   // Historial de turnos por habitación específica
   app.get('/api/rooms/:id/shifts', async (req, res) => {

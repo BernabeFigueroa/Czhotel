@@ -69,9 +69,7 @@ export class HandleTuyaStatusReportUseCase {
       const tipo = Shift.classify(duracionMinutos); // <= 15m limpieza, > 15m turno
       const isOvertime = Shift.isOvertime(duracionMinutos); // > 120m (2 horas)
       
-      const fechaBase = new Intl.DateTimeFormat('en-CA', { 
-        timeZone: 'America/Argentina/Buenos_Aires' 
-      }).format(inicio);
+      const fechaBase = Shift.toArgentinaDateString(inicio);
 
       // Registrar en base de datos con su clasificación
       const shift = await this.shiftRepo.createShift({
