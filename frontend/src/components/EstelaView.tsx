@@ -6,10 +6,6 @@ interface EstelaViewProps {
   shifts: ShiftDTO[];
 }
 
-function pad2(n: number): string {
-  return n.toString().padStart(2, '0');
-}
-
 function formatHourMin(isoString: string): string {
   try {
     const d = new Date(isoString);

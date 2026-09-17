@@ -27,8 +27,6 @@ export const App: React.FC = () => {
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
   const [activeModalRoomId, setActiveModalRoomId] = useState<number | null>(null);
 
-  const activeRoom = rooms.find((r) => r.id === activeModalRoomId);
-
   return (
     <div>
       {/* Barra superior de cambio de vista y selector de dispositivo */}
