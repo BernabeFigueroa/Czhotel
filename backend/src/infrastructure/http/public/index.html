@@ -482,11 +482,6 @@ function renderStaffRooms(){
       tile.appendChild(time);
     }
 
-    const price = document.createElement('div');
-    price.className = 'room-price';
-    price.textContent = formatPrice(room.precioBase || 12000);
-    tile.appendChild(price);
-
     // Botón + ÚNICAMENTE EN HABITACIONES OCUPADAS
     if (room.estadoActual === 'OCUPADA'){
       const addBtn = document.createElement('button');

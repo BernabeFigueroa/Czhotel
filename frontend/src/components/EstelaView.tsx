@@ -46,10 +46,11 @@ export const EstelaView: React.FC<EstelaViewProps> = ({ rooms, shifts }) => {
 
       <div className="estela-list">
         {rooms.map((room) => {
-          const statusKey = room.estadoActual.toLowerCase();
+          const estado = (room.estadoActual || 'LIBRE').toUpperCase();
+          const statusKey = estado.toLowerCase();
           const roomShifts = shifts.filter((s) => s.habitacionId === room.id && s.tipo === 'TURNO');
-          const isCleaning = room.estadoActual === 'LIMPIANDO';
-          const isOccupied = room.estadoActual === 'OCUPADA';
+          const isCleaning = estado === 'LIMPIANDO';
+          const isOccupied = estado === 'OCUPADA';
 
           let cleaningText = '';
           if (isCleaning && room.limpiezaInicio) {

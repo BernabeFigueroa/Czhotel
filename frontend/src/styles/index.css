@@ -279,10 +279,17 @@ button {
   gap: 12px;
 }
 
+/* Fallback estándar @media para compatibilidad con Safari y navegadores de escritorio */
+@media (min-width: 700px) {
+  .rooms-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1050px) {
+  .rooms-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+}
+
 @container shell (min-width: 700px) {
   .rooms-grid { grid-template-columns: repeat(3, 1fr); }
 }
-
 @container shell (min-width: 1050px) {
   .rooms-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; }
 }
@@ -665,6 +672,13 @@ button {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
+}
+
+@media (min-width: 980px) {
+  .estela-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
 }
 
 @container shell (min-width: 980px) {

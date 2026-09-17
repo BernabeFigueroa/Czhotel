@@ -14,10 +14,6 @@ function pad2(n: number): string {
   return n.toString().padStart(2, '0');
 }
 
-function formatPrice(n: number): string {
-  return '$' + Math.round(n).toLocaleString('es-AR');
-}
-
 function elapsedMinutes(dateStr: string | null): number {
   if (!dateStr) return 0;
   const d = new Date(dateStr);
@@ -94,9 +90,10 @@ export const StaffView: React.FC<StaffViewProps> = ({
 
             <div className="rooms-grid">
               {rooms.map((room) => {
-                const statusKey = room.estadoActual.toLowerCase();
-                const isOccupied = room.estadoActual === 'OCUPADA';
-                const isCleaning = room.estadoActual === 'LIMPIANDO';
+                const estado = (room.estadoActual || 'LIBRE').toUpperCase();
+                const statusKey = estado.toLowerCase();
+                const isOccupied = estado === 'OCUPADA';
+                const isCleaning = estado === 'LIMPIANDO';
 
                 let timeText = '';
                 if (isOccupied && room.turnoActualInicio) {
@@ -121,8 +118,6 @@ export const StaffView: React.FC<StaffViewProps> = ({
                     </div>
 
                     {timeText && <div className="room-time">{timeText}</div>}
-
-                    <div className="room-price">{formatPrice(room.precioBase || 12000)}</div>
 
                     {/* Botón + ÚNICAMENTE para habitaciones Ocupadas */}
                     {isOccupied && (

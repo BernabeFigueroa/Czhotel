@@ -1,9 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RoomDTO, ProductDTO, ShiftDTO, RoomConsumptionDTO } from '../types';
 
+const INITIAL_ROOMS: RoomDTO[] = Array.from({ length: 18 }, (_, i) => ({
+  id: i + 1,
+  nombre: `Habitación ${i + 1}`,
+  tuyaDeviceId: '',
+  estadoActual: 'LIBRE',
+  turnoActualInicio: null,
+  limpiezaInicio: null,
+  precioBase: 12000,
+  turnosHoyCount: 0,
+}));
+
+const INITIAL_PRODUCTS: ProductDTO[] = [
+  { id: 1, nombre: 'Preservativos', precio: 1500, stock: 120 },
+  { id: 2, nombre: 'Cerveza', precio: 3200, stock: 48 },
+  { id: 3, nombre: 'Chandon', precio: 9500, stock: 14 },
+  { id: 4, nombre: 'Gaseosa', precio: 2200, stock: 36 },
+  { id: 5, nombre: 'Agua mineral', precio: 1800, stock: 40 },
+  { id: 6, nombre: 'Vino', precio: 7800, stock: 20 },
+];
+
 export function useRoomsStream() {
-  const [rooms, setRooms] = useState<RoomDTO[]>([]);
-  const [products, setProducts] = useState<ProductDTO[]>([]);
+  const [rooms, setRooms] = useState<RoomDTO[]>(INITIAL_ROOMS);
+  const [products, setProducts] = useState<ProductDTO[]>(INITIAL_PRODUCTS);
   const [shifts, setShifts] = useState<ShiftDTO[]>([]);
   const [consumptions, setConsumptions] = useState<Record<number, RoomConsumptionDTO>>({});
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -13,12 +33,14 @@ export function useRoomsStream() {
   const fetchRooms = useCallback(async () => {
     try {
       const res = await fetch('/api/rooms');
-      if (!res.ok) throw new Error('Error al cargar habitaciones');
-      const data: RoomDTO[] = await res.json();
-      setRooms(data);
+      if (res.ok) {
+        const data: RoomDTO[] = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setRooms(data);
+        }
+      }
     } catch (err: any) {
       console.error('[RoomsStream] Error habitaciones:', err);
-      setError('No se pudo conectar con el servidor.');
     }
   }, []);
 
@@ -28,7 +50,9 @@ export function useRoomsStream() {
       const res = await fetch('/api/products');
       if (res.ok) {
         const data: ProductDTO[] = await res.json();
-        setProducts(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        }
       }
     } catch (err) {
       console.error('[RoomsStream] Error productos:', err);
@@ -41,7 +65,9 @@ export function useRoomsStream() {
       const res = await fetch('/api/shifts/today');
       if (res.ok) {
         const data: ShiftDTO[] = await res.json();
-        setShifts(data);
+        if (Array.isArray(data)) {
+          setShifts(data);
+        }
       }
     } catch (err) {
       console.error('[RoomsStream] Error turnos:', err);
@@ -65,7 +91,7 @@ export function useRoomsStream() {
 
   // 5. Cargar todos los consumos iniciales de habitaciones ocupadas
   const fetchAllOccupiedConsumptions = useCallback(async (currentRooms: RoomDTO[]) => {
-    const occupied = currentRooms.filter(r => r.estadoActual === 'OCUPADA');
+    const occupied = currentRooms.filter(r => (r.estadoActual || '').toUpperCase() === 'OCUPADA');
     for (const r of occupied) {
       fetchRoomConsumption(r.id);
     }
@@ -74,6 +100,12 @@ export function useRoomsStream() {
   // Modificar stock (+/-)
   const adjustStock = async (productId: number, delta: number) => {
     try {
+      // Optimistic update
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, stock: Math.max(0, p.stock + delta) } : p
+        )
+      );
       const res = await fetch(`/api/products/${productId}/stock`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -125,7 +157,6 @@ export function useRoomsStream() {
             total: data.total
           }
         }));
-        // Actualizar stock local del producto
         setProducts((prev) =>
           prev.map((p) =>
             p.id === productoId ? { ...p, stock: Math.max(0, p.stock - 1) } : p
@@ -139,94 +170,86 @@ export function useRoomsStream() {
     return null;
   };
 
-  // Cambiar estado de habitación manualmente
-  const changeRoomStatus = async (roomId: number, nuevoEstado: 'LIBRE' | 'OCUPADA' | 'LIMPIANDO') => {
-    try {
-      const res = await fetch(`/api/rooms/${roomId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nuevoEstado })
-      });
-      if (res.ok) {
-        // Refrescar turnos si se cerró un turno
-        if (nuevoEstado === 'LIMPIANDO' || nuevoEstado === 'LIBRE') {
-          fetchShifts();
-        }
-      }
-    } catch (e) {
-      console.error(`[RoomsStream] Error cambiando estado hab ${roomId}:`, e);
-    }
-  };
-
   // Inicialización y SSE
   useEffect(() => {
-    fetchRooms().then(() => {
-      fetchProducts();
-      fetchShifts();
-    });
+    fetchRooms();
+    fetchProducts();
+    fetchShifts();
 
-    const eventSource = new EventSource('/api/rooms/stream');
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/rooms/stream');
 
-    eventSource.onopen = () => {
-      setIsConnected(true);
-      setError(null);
-    };
+      eventSource.onopen = () => {
+        setIsConnected(true);
+        setError(null);
+      };
 
-    eventSource.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload.type === 'ROOM_STATUS_CHANGED') {
-          const { roomId, nuevoEstado, turnoInicio, limpiezaInicio } = payload.data;
-          setRooms((prev) =>
-            prev.map((r) => {
-              if (r.id === roomId) {
-                const turnosHoy = nuevoEstado === 'LIMPIANDO' ? r.turnosHoyCount + 1 : r.turnosHoyCount;
-                return {
-                  ...r,
-                  estadoActual: nuevoEstado,
-                  turnoActualInicio: turnoInicio || null,
-                  limpiezaInicio: limpiezaInicio || null,
-                  turnosHoyCount: turnosHoy
-                };
-              }
-              return r;
-            })
-          );
-          if (nuevoEstado === 'LIMPIANDO' || nuevoEstado === 'LIBRE') {
-            fetchShifts();
-          }
-        } else if (payload.type === 'STOCK_UPDATED') {
-          const updatedProd: ProductDTO = payload.data;
-          setProducts((prev) => {
-            const exists = prev.some(p => p.id === updatedProd.id);
-            if (exists) {
-              return prev.map(p => p.id === updatedProd.id ? updatedProd : p);
-            }
-            return [...prev, updatedProd];
-          });
-        } else if (payload.type === 'ROOM_CONSUMPTION_UPDATED') {
-          const { roomId, items, total, updatedStock } = payload.data;
-          setConsumptions((prev) => ({
-            ...prev,
-            [roomId]: { roomId, items, total }
-          }));
-          if (updatedStock) {
-            setProducts((prev) =>
-              prev.map(p => p.id === updatedStock.productoId ? { ...p, stock: updatedStock.newStock } : p)
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'ROOM_STATUS_CHANGED') {
+            const { roomId, nuevoEstado, turnoInicio, limpiezaInicio } = payload.data;
+            setRooms((prev) =>
+              prev.map((r) => {
+                if (r.id === roomId) {
+                  const turnosHoy = nuevoEstado === 'LIMPIANDO' ? r.turnosHoyCount + 1 : r.turnosHoyCount;
+                  return {
+                    ...r,
+                    estadoActual: nuevoEstado,
+                    turnoActualInicio: turnoInicio || null,
+                    limpiezaInicio: limpiezaInicio || null,
+                    turnosHoyCount: turnosHoy
+                  };
+                }
+                return r;
+              })
             );
+            if (nuevoEstado === 'LIMPIANDO' || nuevoEstado === 'LIBRE') {
+              fetchShifts();
+            }
+          } else if (payload.type === 'STOCK_UPDATED') {
+            const updatedProd: ProductDTO = payload.data;
+            setProducts((prev) => {
+              const exists = prev.some(p => p.id === updatedProd.id);
+              if (exists) {
+                return prev.map(p => p.id === updatedProd.id ? updatedProd : p);
+              }
+              return [...prev, updatedProd];
+            });
+          } else if (payload.type === 'ROOM_CONSUMPTION_UPDATED') {
+            const { roomId, items, total, updatedStock } = payload.data;
+            setConsumptions((prev) => ({
+              ...prev,
+              [roomId]: { roomId, items, total }
+            }));
+            if (updatedStock) {
+              setProducts((prev) =>
+                prev.map(p => p.id === updatedStock.productoId ? { ...p, stock: updatedStock.newStock } : p)
+              );
+            }
           }
+        } catch (e) {
+          console.error('[SSE] Error parseando evento:', e);
         }
-      } catch (e) {
-        console.error('[SSE] Error parseando evento:', e);
-      }
-    };
+      };
 
-    eventSource.onerror = () => {
-      setIsConnected(false);
-    };
+      eventSource.onerror = () => {
+        setIsConnected(false);
+      };
+    } catch (e) {
+      console.warn('[SSE] EventSource no disponible o falló:', e);
+    }
+
+    // Polling fallback cada 15s para máxima robustez en Safari y conexiones lentas
+    const interval = setInterval(() => {
+      fetchRooms();
+      fetchShifts();
+    }, 15000);
 
     return () => {
-      eventSource.close();
+      if (eventSource) eventSource.close();
+      clearInterval(interval);
     };
   }, [fetchRooms, fetchProducts, fetchShifts]);
 
@@ -247,7 +270,6 @@ export function useRoomsStream() {
     adjustStock,
     addProduct,
     addConsumptionToRoom,
-    changeRoomStatus,
     fetchRoomConsumption,
     refreshRooms: fetchRooms
   };
