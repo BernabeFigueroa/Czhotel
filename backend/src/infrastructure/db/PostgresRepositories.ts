@@ -3,8 +3,7 @@ import { Room, RoomStatus } from '../../domain/entities/Room';
 import { Shift } from '../../domain/entities/Shift';
 import { IRoomRepository } from '../../application/ports/IRoomRepository';
 import { IShiftRepository, ShiftCreateData } from '../../application/ports/IShiftRepository';
-import { IProductRepository } from '../../application/ports/IProductRepository';
-import { ProductDTO, ConsumptionItemDTO, ShiftItemSummary } from '../../../../shared';
+import { ProductDTO, ConsumptionItemDTO, ShiftItemSummary, IProductRepository } from '../../application/ports/IProductRepository';
 
 export class PostgresRoomRepository implements IRoomRepository {
   constructor(private pool: Pool) {}

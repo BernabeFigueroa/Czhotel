@@ -1,4 +1,25 @@
-import { ProductDTO, ConsumptionItemDTO, ShiftItemSummary } from '../../../../shared';
+export interface ProductDTO {
+  id: number;
+  nombre: string;
+  precio: number;
+  stock: number;
+}
+
+export interface ConsumptionItemDTO {
+  id: number;
+  productoId: number;
+  nombre: string;
+  precioUnitario: number;
+  cantidad: number;
+}
+
+export interface ShiftItemSummary {
+  productoId?: number;
+  nombre: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal?: number;
+}
 
 export interface IProductRepository {
   findAll(): Promise<ProductDTO[]>;
