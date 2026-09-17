@@ -42,11 +42,24 @@ export class TelegramBotService implements INotificationService {
       const mins = (payload.durationMinutes || 0) % 60;
       const duracionTexto = horas > 0 ? `${horas}h ${mins}m` : `${mins} minutos`;
 
-      mensaje = `🟢 *${payload.roomName.toUpperCase()}*\n\n` +
-                `*ESTADO:* LIBRE\n` +
-                `*HORA:* ${hora} hs\n` +
-                `*DURACIÓN:* ${duracionTexto}\n` +
-                `_⚡ Llave bajada en administración._`;
+      if (payload.tipo === 'LIMPIEZA') {
+        mensaje = `🧹 *${payload.roomName.toUpperCase()} — LIMPIEZA*\n\n` +
+                  `*ESTADO:* LIBRE\n` +
+                  `*HORA:* ${hora} hs\n` +
+                  `*DURACIÓN:* ${duracionTexto}\n` +
+                  `_✨ Menor a 15 min: registrado como limpieza/mantenimiento._`;
+      } else {
+        const estadoTiempo = payload.isOvertime 
+          ? `⚠️ *Superó las 2 horas estándar.*` 
+          : `✓ Turno dentro de las 2 hs estándar.`;
+
+        mensaje = `🟢 *${payload.roomName.toUpperCase()} — FIN DE TURNO*\n\n` +
+                  `*ESTADO:* LIBRE\n` +
+                  `*HORA:* ${hora} hs\n` +
+                  `*DURACIÓN:* ${duracionTexto}\n` +
+                  `${estadoTiempo}\n` +
+                  `_⚡ Llave bajada en administración._`;
+      }
     }
 
     try {

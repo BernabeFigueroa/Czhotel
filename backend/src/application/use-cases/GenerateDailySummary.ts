@@ -14,13 +14,18 @@ export class GenerateDailySummaryUseCase {
     const shifts = await this.shiftRepo.findByDate(targetDate);
     const rooms = await this.roomRepo.findAllWithTodayCounts();
 
+    const turnosReales = shifts.filter((s) => s.tipo === 'TURNO');
+    const limpiezas = shifts.filter((s) => s.tipo === 'LIMPIEZA');
+
     if (shifts.length === 0) {
-      const emptyMsg = `No se registraron turnos en la fecha ${targetDate}.`;
+      const emptyMsg = `No se registraron movimientos en la fecha ${targetDate}.`;
       await this.notifier.sendDailySummary(emptyMsg);
       return emptyMsg;
     }
 
-    let report = `📅 Fecha: ${targetDate}\nTotal de turnos: ${shifts.length}\n\n`;
+    let report = `📅 Fecha: ${targetDate}\n` +
+                 `🚗 Total Turnos Ocupados: ${turnosReales.length}\n` +
+                 `🧹 Total Limpiezas (< 15 min): ${limpiezas.length}\n\n`;
 
     // Agrupar por habitación
     const roomMap = new Map<number, typeof shifts>();
@@ -32,7 +37,10 @@ export class GenerateDailySummaryUseCase {
 
     for (const room of rooms) {
       const roomShifts = roomMap.get(room.id) || [];
-      report += `🏨 *${room.nombre.toUpperCase()}* (${roomShifts.length} turnos):\n`;
+      const habTurnos = roomShifts.filter((s) => s.tipo === 'TURNO');
+      const habLimpiezas = roomShifts.filter((s) => s.tipo === 'LIMPIEZA');
+
+      report += `🏨 *${room.nombre.toUpperCase()}* (${habTurnos.length} turnos, ${habLimpiezas.length} limpiezas):\n`;
       if (roomShifts.length === 0) {
         report += `  - Sin actividad\n`;
       } else {
@@ -52,7 +60,13 @@ export class GenerateDailySummaryUseCase {
           const horas = Math.floor(s.duracionMinutos / 60);
           const mins = s.duracionMinutos % 60;
           const duracion = horas > 0 ? `${horas}h ${mins}m` : `${mins}m`;
-          report += `  • ${inicio} a ${fin} (${duracion})\n`;
+
+          if (s.tipo === 'LIMPIEZA') {
+            report += `  🧹 Limpieza: ${inicio} a ${fin} (${duracion})\n`;
+          } else {
+            const overtimeFlag = s.duracionMinutos > 120 ? ' ⚠️ >2hs' : '';
+            report += `  🚗 Turno: ${inicio} a ${fin} (${duracion}${overtimeFlag})\n`;
+          }
         }
       }
       report += `\n`;

@@ -24,7 +24,7 @@ export class HandleTuyaStatusReportUseCase {
 
     const eventDate = new Date(eventTimestampMs);
 
-    // ESCENARIO 1: Llave subida (ON) -> Inicio de Turno
+    // ESCENARIO 1: Llave subida (ON) -> Inicio de ocupación
     if (switchValue === true) {
       if (room.isOccupied()) {
         console.log(`[Idempotencia] Habitación ${room.nombre} ya está OCUPADA. Ignorando evento.`);
@@ -54,7 +54,7 @@ export class HandleTuyaStatusReportUseCase {
       return;
     }
 
-    // ESCENARIO 2: Llave bajada (OFF) -> Fin de Turno
+    // ESCENARIO 2: Llave bajada (OFF) -> Fin de ocupación / limpieza
     if (switchValue === false) {
       if (!room.isOccupied()) {
         console.log(`[Idempotencia] Habitación ${room.nombre} ya está LIBRE. Ignorando evento.`);
@@ -63,18 +63,24 @@ export class HandleTuyaStatusReportUseCase {
 
       const inicio = room.turnoActualInicio ? new Date(room.turnoActualInicio) : eventDate;
       const duracionMinutos = Shift.calculateDurationMinutes(inicio, eventDate);
-      const fechaBase = inicio.toISOString().split('T')[0];
+      const tipo = Shift.classify(duracionMinutos); // <= 15m limpieza, > 15m turno
+      const isOvertime = Shift.isOvertime(duracionMinutos); // > 120m (2 horas)
+      
+      const fechaBase = new Intl.DateTimeFormat('en-CA', { 
+        timeZone: 'America/Argentina/Buenos_Aires' 
+      }).format(inicio);
 
-      // Registrar turno finalizado
+      // Registrar en base de datos con su clasificación
       await this.shiftRepo.createShift({
         habitacionId: room.id,
         horaInicio: inicio,
         horaFin: eventDate,
         duracionMinutos,
-        fecha: fechaBase
+        fecha: fechaBase,
+        tipo
       });
 
-      // Actualizar estado de la habitación
+      // Liberar la habitación
       await this.roomRepo.updateStatus(room.id, 'LIBRE', null);
 
       // Notificación inmediata Telegram
@@ -82,7 +88,9 @@ export class HandleTuyaStatusReportUseCase {
         roomName: room.nombre,
         action: 'FIN',
         timestamp: eventDate,
-        durationMinutes: duracionMinutos
+        durationMinutes: duracionMinutos,
+        tipo,
+        isOvertime
       });
 
       // Streaming PWA

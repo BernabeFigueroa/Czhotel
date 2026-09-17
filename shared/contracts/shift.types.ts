@@ -1,3 +1,5 @@
+export type ShiftType = 'TURNO' | 'LIMPIEZA';
+
 export interface ShiftDTO {
   id: number;
   habitacionId: number;
@@ -6,6 +8,7 @@ export interface ShiftDTO {
   horaFin: string;    // ISO 8601 UTC
   duracionMinutos: number;
   fecha: string;      // YYYY-MM-DD
+  tipo: ShiftType;
 }
 
 export interface ShiftCreateInput {
@@ -14,4 +17,5 @@ export interface ShiftCreateInput {
   horaFin: Date;
   duracionMinutos: number;
   fecha: string;
+  tipo: ShiftType;
 }

@@ -1,4 +1,4 @@
-import { Shift } from '../../domain/entities/Shift';
+import { Shift, ShiftType } from '../../domain/entities/Shift';
 
 export interface ShiftCreateData {
   habitacionId: number;
@@ -6,6 +6,7 @@ export interface ShiftCreateData {
   horaFin: Date;
   duracionMinutos: number;
   fecha: string;
+  tipo: ShiftType;
 }
 
 export interface IShiftRepository {

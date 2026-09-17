@@ -76,10 +76,10 @@ export class PostgresShiftRepository implements IShiftRepository {
 
   async createShift(data: ShiftCreateData): Promise<Shift> {
     const res = await this.pool.query(
-      `INSERT INTO turnos (habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha`,
-      [data.habitacionId, data.horaInicio, data.horaFin, data.duracionMinutos, data.fecha]
+      `INSERT INTO turnos (habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo`,
+      [data.habitacionId, data.horaInicio, data.horaFin, data.duracionMinutos, data.fecha, data.tipo]
     );
     const row = res.rows[0];
     return new Shift(
@@ -88,13 +88,14 @@ export class PostgresShiftRepository implements IShiftRepository {
       new Date(row.hora_inicio),
       new Date(row.hora_fin),
       row.duracion_minutos,
-      row.fecha
+      row.fecha,
+      row.tipo
     );
   }
 
   async findByDate(fecha: string): Promise<Shift[]> {
     const res = await this.pool.query(
-      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha 
+      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo 
        FROM turnos 
        WHERE fecha = $1 
        ORDER BY hora_inicio ASC`,
@@ -106,13 +107,14 @@ export class PostgresShiftRepository implements IShiftRepository {
       new Date(r.hora_inicio),
       new Date(r.hora_fin),
       r.duracion_minutos,
-      r.fecha
+      r.fecha,
+      r.tipo || 'TURNO'
     ));
   }
 
   async findByRoomAndDate(habitacionId: number, fecha: string): Promise<Shift[]> {
     const res = await this.pool.query(
-      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha 
+      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo 
        FROM turnos 
        WHERE habitacion_id = $1 AND fecha = $2 
        ORDER BY hora_inicio ASC`,
@@ -124,7 +126,8 @@ export class PostgresShiftRepository implements IShiftRepository {
       new Date(r.hora_inicio),
       new Date(r.hora_fin),
       r.duracion_minutos,
-      r.fecha
+      r.fecha,
+      r.tipo || 'TURNO'
     ));
   }
 }

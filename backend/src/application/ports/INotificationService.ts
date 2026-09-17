@@ -1,8 +1,12 @@
+import { ShiftType } from '../../domain/entities/Shift';
+
 export interface ShiftAlertPayload {
   roomName: string;
   action: 'INICIO' | 'FIN';
   timestamp: Date;
   durationMinutes?: number;
+  tipo?: ShiftType;
+  isOvertime?: boolean;
 }
 
 export interface INotificationService {

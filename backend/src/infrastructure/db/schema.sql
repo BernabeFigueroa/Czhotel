@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS turnos (
     hora_fin TIMESTAMPTZ NOT NULL,
     duracion_minutos INT NOT NULL CHECK (duracion_minutos >= 0),
     fecha DATE NOT NULL,
+    tipo VARCHAR(20) NOT NULL DEFAULT 'TURNO' CHECK (tipo IN ('TURNO', 'LIMPIEZA')),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
