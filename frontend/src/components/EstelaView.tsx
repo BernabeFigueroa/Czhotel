@@ -1,5 +1,5 @@
 import React from 'react';
-import { RoomDTO, ShiftDTO, ShiftItemSummary } from '../types';
+import { RoomDTO, ShiftDTO } from '../types';
 
 interface EstelaViewProps {
   rooms: RoomDTO[];
