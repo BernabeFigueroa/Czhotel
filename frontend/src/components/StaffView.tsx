@@ -6,7 +6,6 @@ interface StaffViewProps {
   rooms: RoomDTO[];
   products: ProductDTO[];
   onOpenConsumption: (roomId: number) => void;
-  onChangeRoomStatus: (roomId: number, nuevoEstado: 'LIBRE' | 'OCUPADA' | 'LIMPIANDO') => void;
   onAdjustStock: (productId: number, delta: number) => void;
   onAddProduct: (nombre: string, precio: number, stock: number) => Promise<any>;
 }
@@ -31,13 +30,11 @@ export const StaffView: React.FC<StaffViewProps> = ({
   rooms,
   products,
   onOpenConsumption,
-  onChangeRoomStatus,
   onAdjustStock,
   onAddProduct,
 }) => {
   const [activeTab, setActiveTab] = useState<'rooms' | 'stock'>('rooms');
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Reloj en vivo y refresco de minutos transcurridos
   useEffect(() => {
@@ -47,32 +44,12 @@ export const StaffView: React.FC<StaffViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 2600);
-  };
-
   const getClockString = () => {
     const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     const dia = dias[currentTime.getDay()];
     const fecha = `${pad2(currentTime.getDate())}/${pad2(currentTime.getMonth() + 1)}`;
     const hora = `${pad2(currentTime.getHours())}:${pad2(currentTime.getMinutes())}`;
     return `${dia} ${fecha} · ${hora}`;
-  };
-
-  const handleTileClick = (room: RoomDTO) => {
-    if (room.estadoActual === 'LIBRE') {
-      onChangeRoomStatus(room.id, 'OCUPADA');
-      showToast(`Habitación ${room.id}: turno iniciado`);
-    } else if (room.estadoActual === 'OCUPADA') {
-      onChangeRoomStatus(room.id, 'LIMPIANDO');
-      showToast(`Habitación ${room.id}: turno cerrado, limpieza en curso`);
-    } else if (room.estadoActual === 'LIMPIANDO') {
-      onChangeRoomStatus(room.id, 'LIBRE');
-      showToast(`Habitación ${room.id}: limpieza finalizada, pasa a libre`);
-    }
   };
 
   return (
@@ -133,7 +110,6 @@ export const StaffView: React.FC<StaffViewProps> = ({
                   <article
                     key={room.id}
                     className={`room-tile status-${statusKey}`}
-                    onClick={() => handleTileClick(room)}
                   >
                     <div className="room-num">{pad2(room.id)}</div>
                     <div className="room-status">
@@ -149,15 +125,12 @@ export const StaffView: React.FC<StaffViewProps> = ({
                     <div className="room-price">{formatPrice(room.precioBase || 12000)}</div>
 
                     {/* Botón + ÚNICAMENTE para habitaciones Ocupadas */}
-                    {isOccupied ? (
+                    {isOccupied && (
                       <button
                         type="button"
                         className="plus-btn"
                         aria-label={`Agregar consumo a habitación ${room.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenConsumption(room.id);
-                        }}
+                        onClick={() => onOpenConsumption(room.id)}
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -169,12 +142,6 @@ export const StaffView: React.FC<StaffViewProps> = ({
                           <line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
                       </button>
-                    ) : (
-                      <div className="room-hint">
-                        {room.estadoActual === 'LIBRE'
-                          ? 'Tocar para ocupar'
-                          : 'Tocar para liberar'}
-                      </div>
                     )}
                   </article>
                 );
@@ -191,8 +158,6 @@ export const StaffView: React.FC<StaffViewProps> = ({
           />
         )}
       </div>
-
-      {toastMessage && <div className="toast">{toastMessage}</div>}
     </section>
   );
 };

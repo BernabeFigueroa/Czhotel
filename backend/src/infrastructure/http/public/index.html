@@ -158,10 +158,9 @@ button{font-family:inherit;cursor:pointer;}
   border-radius:12px;
   padding:14px 14px 18px;
   min-height:112px;
-  transition:border-color .15s, transform .1s;
-  cursor:pointer;
+  transition:border-color .15s;
+  cursor:default;
 }
-.room-tile:active{transform:scale(.98);}
 .room-tile.status-libre{background:var(--libre-bg);border-color:var(--libre-line);}
 .room-tile.status-limpiando{background:var(--limpiando-bg);border-color:var(--limpiando-line);}
 .room-tile.status-ocupada{background:var(--ocupada-bg);border-color:var(--ocupada-line);padding-bottom:40px;}
@@ -300,68 +299,45 @@ button{font-family:inherit;cursor:pointer;}
 </head>
 <body>
 
-<div class="chrome-bar">
-  <div class="switch-group">
-    <span class="switch-label">Vista</span>
-    <div class="segmented" id="viewSwitch">
-      <button class="active" data-view="staff">Personal del hotel</button>
-      <button data-view="estela">Estela</button>
-    </div>
-  </div>
-  <div class="switch-group">
-    <span class="switch-label">Ver como</span>
-    <div class="segmented" id="deviceSwitch">
-      <button class="active" data-device="desktop">Escritorio</button>
-      <button data-device="tablet">Tablet</button>
-      <button data-device="mobile">Celular</button>
-    </div>
-  </div>
-</div>
+<div class="app-shell min-h-screen" id="appShell">
 
-<div class="stage">
-  <div class="stage-note" id="stageNote">Vista previa en escritorio</div>
-  <div class="device-frame" id="deviceFrame" data-device="desktop">
-    <div class="app-shell" id="appShell">
-
-      <!-- VISTA PERSONAL DEL HOTEL -->
-      <section class="view view-staff" id="view-staff">
-        <header class="staff-header">
-          <div>
-            <span class="staff-title-main">Habitaciones</span>
-            <span class="staff-title-sub" id="staffClock"></span>
-          </div>
-          <nav class="staff-tabs" id="staffTabs">
-            <button class="tab-btn active" data-tab="rooms">Habitaciones</button>
-            <button class="tab-btn" data-tab="stock">Stock</button>
-          </nav>
-        </header>
-        <div class="staff-body">
-          <div class="tab-panel" data-panel="rooms" id="tabRooms">
-            <div class="legend">
-              <span><i class="dot-libre"></i>Libre</span>
-              <span><i class="dot-limpiando"></i>Limpiando</span>
-              <span><i class="dot-ocupada"></i>Ocupada</span>
-            </div>
-            <div class="rooms-grid" id="staffRoomsGrid"></div>
-          </div>
-          <div class="tab-panel hidden" data-panel="stock" id="tabStock">
-            <div class="stock-panel" id="stockPanel"></div>
-          </div>
+  <!-- VISTA PERSONAL DEL HOTEL -->
+  <section class="view view-staff" id="view-staff">
+    <header class="staff-header">
+      <div>
+        <span class="staff-title-main">Habitaciones</span>
+        <span class="staff-title-sub" id="staffClock"></span>
+      </div>
+      <nav class="staff-tabs" id="staffTabs">
+        <button class="tab-btn active" data-tab="rooms">Habitaciones</button>
+        <button class="tab-btn" data-tab="stock">Stock</button>
+      </nav>
+    </header>
+    <div class="staff-body">
+      <div class="tab-panel" data-panel="rooms" id="tabRooms">
+        <div class="legend">
+          <span><i class="dot-libre"></i>Libre</span>
+          <span><i class="dot-limpiando"></i>Limpiando</span>
+          <span><i class="dot-ocupada"></i>Ocupada</span>
         </div>
-        <div class="toast" id="staffToast" hidden></div>
-      </section>
-
-      <!-- VISTA ESTELA (SOLO LECTURA, SENIOR / MOBILE FIRST) -->
-      <section class="view view-estela" id="view-estela" hidden>
-        <header class="estela-header">
-          <div class="estela-title">Habitaciones de hoy</div>
-          <div class="estela-date" id="estelaDate"></div>
-        </header>
-        <div class="estela-list" id="estelaList"></div>
-      </section>
-
+        <div class="rooms-grid" id="staffRoomsGrid"></div>
+      </div>
+      <div class="tab-panel hidden" data-panel="stock" id="tabStock">
+        <div class="stock-panel" id="stockPanel"></div>
+      </div>
     </div>
-  </div>
+    <div class="toast" id="staffToast" hidden></div>
+  </section>
+
+  <!-- VISTA ESTELA (URL SECRETA /estelaibarra147) -->
+  <section class="view view-estela" id="view-estela" hidden>
+    <header class="estela-header">
+      <div class="estela-title">Habitaciones de hoy</div>
+      <div class="estela-date" id="estelaDate"></div>
+    </header>
+    <div class="estela-list" id="estelaList"></div>
+  </section>
+
 </div>
 
 <!-- MODAL AGREGAR CONSUMO (SOLO HABITACIONES OCUPADAS) -->
@@ -519,48 +495,19 @@ function renderStaffRooms(){
       addBtn.dataset.room = room.id;
       addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
       tile.appendChild(addBtn);
-    } else {
-      const hint = document.createElement('div');
-      hint.className = 'room-hint';
-      hint.textContent = room.estadoActual === 'LIBRE' ? 'Tocar para ocupar' : 'Tocar para liberar';
-      tile.appendChild(hint);
     }
 
     grid.appendChild(tile);
   });
 }
 
-document.getElementById('staffRoomsGrid').addEventListener('click', async (e) => {
+document.getElementById('staffRoomsGrid').addEventListener('click', (e) => {
   const addBtn = e.target.closest('.plus-btn');
   if (addBtn){
     e.stopPropagation();
     openModal(parseInt(addBtn.dataset.room, 10));
-    return;
   }
-  const tile = e.target.closest('.room-tile');
-  if (tile){
-    const roomId = parseInt(tile.dataset.room, 10);
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
-
-    let nuevoEstado = 'LIBRE';
-    if (room.estadoActual === 'LIBRE') nuevoEstado = 'OCUPADA';
-    else if (room.estadoActual === 'OCUPADA') nuevoEstado = 'LIMPIANDO';
-    else if (room.estadoActual === 'LIMPIANDO') nuevoEstado = 'LIBRE';
-
-    try {
-      const res = await fetch(`/api/rooms/${roomId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nuevoEstado })
-      });
-      if (res.ok) {
-        showToast(`Habitación ${roomId}: pasa a ${statusLabel[nuevoEstado]}`);
-        loadRooms();
-        loadShifts();
-      }
-    } catch(err) { console.error('Error actualizando estado:', err); }
-  }
+});
 });
 
 // 3. MODAL AGREGAR CONSUMO
@@ -819,27 +766,17 @@ function renderEstelaRooms(){
   });
 }
 
-// 6. SWITCHES DE VISTA Y DISPOSITIVO
-document.getElementById('viewSwitch').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const isStaff = btn.dataset.view === 'staff';
-  document.getElementById('view-staff').hidden = !isStaff;
-  document.getElementById('view-estela').hidden = isStaff;
-});
-
-const deviceLabels = { desktop: 'escritorio', tablet: 'tablet (834 px)', mobile: 'celular (390 px)' };
-document.getElementById('deviceSwitch').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  document.querySelectorAll('#deviceSwitch button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const device = btn.dataset.device;
-  document.getElementById('deviceFrame').dataset.device = device;
-  document.getElementById('stageNote').textContent = 'Vista previa en ' + deviceLabels[device];
-});
+// 6. RUTEO AUTOMÁTICO SEGÚN URL (/estelaibarra147)
+function checkRoute(){
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  const isEstela = path.includes('estelaibarra147') || hash.includes('estelaibarra147');
+  document.getElementById('view-staff').hidden = isEstela;
+  document.getElementById('view-estela').hidden = !isEstela;
+}
+window.addEventListener('popstate', checkRoute);
+window.addEventListener('hashchange', checkRoute);
+checkRoute();
 
 // 7. RELOJ EN VIVO
 function updateClock(){

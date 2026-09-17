@@ -294,12 +294,8 @@ button {
   border-radius: 12px;
   padding: 14px 14px 18px;
   min-height: 112px;
-  transition: border-color 0.15s, transform 0.1s;
-  cursor: pointer;
-}
-
-.room-tile:active {
-  transform: scale(0.98);
+  transition: border-color 0.15s;
+  cursor: default;
 }
 
 .room-tile.status-libre {

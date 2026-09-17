@@ -1,15 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRoomsStream } from './hooks/useRoomsStream';
-import { HeaderChrome, ViewMode, DeviceMode } from './components/HeaderChrome';
 import { StaffView } from './components/StaffView';
 import { EstelaView } from './components/EstelaView';
 import { ConsumptionModal } from './components/ConsumptionModal';
-
-const deviceLabels: Record<DeviceMode, string> = {
-  desktop: 'escritorio',
-  tablet: 'tablet (834 px)',
-  mobile: 'celular (390 px)',
-};
 
 export const App: React.FC = () => {
   const {
@@ -20,49 +13,47 @@ export const App: React.FC = () => {
     adjustStock,
     addProduct,
     addConsumptionToRoom,
-    changeRoomStatus,
   } = useRoomsStream();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('staff');
-  const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
   const [activeModalRoomId, setActiveModalRoomId] = useState<number | null>(null);
+  const [isEstela, setIsEstela] = useState<boolean>(() => {
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    return path.includes('estelaibarra147') || hash.includes('estelaibarra147');
+  });
+
+  // Escuchar cambios de ruta o popstate
+  useEffect(() => {
+    const checkPath = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      setIsEstela(path.includes('estelaibarra147') || hash.includes('estelaibarra147'));
+    };
+
+    window.addEventListener('popstate', checkPath);
+    window.addEventListener('hashchange', checkPath);
+    return () => {
+      window.removeEventListener('popstate', checkPath);
+      window.removeEventListener('hashchange', checkPath);
+    };
+  }, []);
 
   return (
-    <div>
-      {/* Barra superior de cambio de vista y selector de dispositivo */}
-      <HeaderChrome
-        currentView={viewMode}
-        onViewChange={setViewMode}
-        currentDevice={deviceMode}
-        onDeviceChange={setDeviceMode}
-      />
+    <div className="app-shell min-h-screen">
+      {isEstela ? (
+        <EstelaView rooms={rooms} shifts={shifts} />
+      ) : (
+        <StaffView
+          rooms={rooms}
+          products={products}
+          onOpenConsumption={(id) => setActiveModalRoomId(id)}
+          onAdjustStock={adjustStock}
+          onAddProduct={addProduct}
+        />
+      )}
 
-      {/* Escenario de visualización con soporte responsive */}
-      <main className="stage">
-        <div className="stage-note">
-          Vista previa en {deviceLabels[deviceMode]}
-        </div>
-
-        <div className="device-frame" data-device={deviceMode}>
-          <div className="app-shell">
-            {viewMode === 'staff' ? (
-              <StaffView
-                rooms={rooms}
-                products={products}
-                onOpenConsumption={(id) => setActiveModalRoomId(id)}
-                onChangeRoomStatus={changeRoomStatus}
-                onAdjustStock={adjustStock}
-                onAddProduct={addProduct}
-              />
-            ) : (
-              <EstelaView rooms={rooms} shifts={shifts} />
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Modal de Carga de Consumo en Habitación Ocupada */}
-      {activeModalRoomId !== null && (
+      {/* Modal de Carga de Consumo en Habitación Ocupada (Personal) */}
+      {!isEstela && activeModalRoomId !== null && (
         <ConsumptionModal
           roomId={activeModalRoomId}
           products={products}
