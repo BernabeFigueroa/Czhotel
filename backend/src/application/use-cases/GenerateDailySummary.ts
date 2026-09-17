@@ -10,7 +10,7 @@ export class GenerateDailySummaryUseCase {
   ) {}
 
   async execute(dateStr?: string): Promise<string> {
-    const targetDate = dateStr || new Date().toISOString().split('T')[0];
+    const targetDate = dateStr || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
     const shifts = await this.shiftRepo.findByDate(targetDate);
     const rooms = await this.roomRepo.findAllWithTodayCounts();
 
@@ -37,8 +37,18 @@ export class GenerateDailySummaryUseCase {
         report += `  - Sin actividad\n`;
       } else {
         for (const s of roomShifts) {
-          const inicio = s.horaInicio.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-          const fin = s.horaFin.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+          const inicio = s.horaInicio.toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'America/Argentina/Buenos_Aires'
+          });
+          const fin = s.horaFin.toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'America/Argentina/Buenos_Aires'
+          });
           const horas = Math.floor(s.duracionMinutos / 60);
           const mins = s.duracionMinutos % 60;
           const duracion = horas > 0 ? `${horas}h ${mins}m` : `${mins}m`;

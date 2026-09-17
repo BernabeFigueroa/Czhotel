@@ -24,7 +24,12 @@ export class TelegramBotService implements INotificationService {
   }
 
   async sendShiftAlert(payload: ShiftAlertPayload): Promise<void> {
-    const hora = payload.timestamp.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const hora = payload.timestamp.toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Argentina/Buenos_Aires'
+    });
 
     let mensaje = '';
     if (payload.action === 'INICIO') {
