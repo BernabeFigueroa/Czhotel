@@ -7,18 +7,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Chezz Motel" />
-    <link rel="manifest" id="app-manifest" href="/manifest.json" />
     <script>
       (function() {
         var isEstela = window.location.pathname.toLowerCase().includes('estelaibarra147') || 
-                       window.location.hash.toLowerCase().includes('estelaibarra147');
-        var manifestLink = document.getElementById('app-manifest');
-        if (manifestLink) {
-          manifestLink.href = isEstela ? '/manifest-estela.json' : '/manifest.json';
-        }
-        var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-        if (themeColorMeta && isEstela) {
-          themeColorMeta.setAttribute('content', '#FBF9F2');
+                       window.location.hash.toLowerCase().includes('estelaibarra147') ||
+                       (localStorage.getItem('chezz_estela_authorized') === 'true' && (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone));
+        
+        var link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = isEstela ? '/manifest-estela.json' : '/manifest.json';
+        document.head.appendChild(link);
+
+        var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (titleMeta) {
+          titleMeta.setAttribute('content', isEstela ? 'Auditoría Chezz' : 'Panel Chezz');
         }
       })();
     </script>

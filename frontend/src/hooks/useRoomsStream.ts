@@ -66,11 +66,13 @@ export function useRoomsStream() {
     }
   }, []);
 
-  // 3. Cargar turnos por fecha (por defecto la fecha seleccionada)
+  // 3. Cargar turnos por fecha
   const fetchShifts = useCallback(async (targetDate?: string) => {
     const dateToFetch = targetDate || selectedDate;
     try {
-      const res = await fetch(`/api/shifts?date=${dateToFetch}`);
+      const isCurrentDay = dateToFetch === getTodayArgentina();
+      const endpoint = isCurrentDay ? '/api/shifts/today' : `/api/shifts?date=${dateToFetch}`;
+      const res = await fetch(endpoint);
       if (res.ok) {
         const data: ShiftDTO[] = await res.json();
         if (Array.isArray(data)) {

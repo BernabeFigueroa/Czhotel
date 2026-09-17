@@ -56,7 +56,7 @@ export function createHttpServer(
           const inicio = room.turnoActualInicio ? new Date(room.turnoActualInicio) : now;
           const duracion = Shift.calculateDurationMinutes(inicio, now);
           const tipo = Shift.classify(duracion);
-          const fechaBase = Shift.toArgentinaDateString(inicio);
+          const fechaBase = Shift.toArgentinaDateString(now);
 
           const shift = await shiftRepo.createShift({
             habitacionId: roomId,
