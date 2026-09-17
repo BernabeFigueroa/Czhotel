@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Panel de habitaciones - Chezz Motel</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#211F1A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-body:'Public Sans',system-ui,-apple-system,sans-serif;
+  --font-display:'Space Grotesk',var(--font-body);
+
+  --chrome-bg:#E9E4D4;
+  --chrome-line:#CFC7AD;
+  --chrome-ink:#26241C;
+  --chrome-ink-soft:#6B6552;
+
+  --board-bg:#211F1A;
+  --board-panel:#2B2822;
+  --board-panel-2:#33302A;
+  --board-line:#4A4638;
+  --board-text:#F1ECE0;
+  --board-text-soft:#B8B2A0;
+  --brass:#C9A227;
+  --brass-ink:#221E10;
+
+  /* tres estados, vista personal (tablero oscuro) */
+  --libre-bg:#1E3A22;    --libre-line:#3E8B3F;   --libre-text:#8FE08C;
+  --limpiando-bg:#332049; --limpiando-line:#7C5BC7; --limpiando-text:#CBB8F3;
+  --ocupada-bg:#3A1D18;  --ocupada-line:#B4402F; --ocupada-text:#EE9B87;
+
+  --paper:#FBF9F2;
+  --paper-line:#DDD5BE;
+  --paper-panel:#F3EEDF;
+  --ink:#22201A;
+  --ink-soft:#5D5747;
+
+  /* tres estados, vista Estela (tarjetas de color sólido de alto contraste) */
+  --libre2-bg:#2E7D32;     --libre2-text:#F2FBF0;
+  --limpiando2-bg:#6B4BA8; --limpiando2-text:#F6F1FC;
+  --ocupada2-bg:#B23A2E;   --ocupada2-text:#FCEEEB;
+}
+
+*{box-sizing:border-box;touch-action:manipulation;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--chrome-bg);
+  color:var(--chrome-ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px;}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;animation:none !important;}
+}
+
+/* ---------- top chrome ---------- */
+.chrome-bar{
+  display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+  padding:16px 22px;border-bottom:1px solid var(--chrome-line);
+}
+.switch-group{display:flex;flex-direction:column;gap:6px;}
+.switch-label{font-size:.72rem;color:var(--chrome-ink-soft);letter-spacing:.02em;font-weight:700;text-transform:uppercase;}
+.segmented{display:inline-flex;border:1px solid var(--chrome-line);border-radius:10px;overflow:hidden;background:#fff;}
+.segmented button{
+  border:none;background:transparent;padding:9px 16px;font-size:.88rem;font-weight:600;
+  color:var(--chrome-ink-soft);border-right:1px solid var(--chrome-line);
+  transition:background-color .15s, color .15s;
+}
+.segmented button:last-child{border-right:none;}
+.segmented button.active{background:var(--chrome-ink);color:#fff;}
+
+.stage{padding:26px 18px 60px;display:flex;flex-direction:column;align-items:center;}
+.stage-note{font-size:.8rem;color:var(--chrome-ink-soft);margin-bottom:14px;}
+
+.device-frame{width:100%;background:transparent;transition:width .25s ease;}
+.device-frame[data-device="tablet"],
+.device-frame[data-device="mobile"]{
+  border:1px solid var(--chrome-line);
+  border-radius:22px;
+  box-shadow:0 24px 48px rgba(30,26,10,.18);
+  overflow:hidden;
+}
+.device-frame[data-device="tablet"]{width:834px;max-width:100%;}
+.device-frame[data-device="mobile"]{width:390px;max-width:100%;}
+
+.app-shell{container-type:inline-size;container-name:shell;min-height:100vh;}
+
+.view{display:block;}
+.view[hidden]{display:none;}
+.hidden{display:none !important;}
+
+.plus-btn{
+  position:absolute;right:10px;bottom:10px;
+  width:34px;height:34px;border-radius:50%;
+  background:var(--brass);border:none;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  transition:transform .12s, filter .12s;
+}
+.plus-btn:hover{filter:brightness(1.1);}
+.plus-btn:active{transform:scale(.92);}
+.plus-btn svg{width:16px;height:16px;stroke:var(--brass-ink);}
+
+/* ============ VISTA PERSONAL (tablero) ============ */
+.view-staff{
+  background:var(--board-bg);
+  color:var(--board-text);
+  font-family:var(--font-body);
+  min-height:100vh;
+}
+.staff-header{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+  padding:20px 20px 14px;border-bottom:1px solid var(--board-line);
+}
+.staff-title-main{
+  font-family:var(--font-display);font-weight:700;font-size:1.5rem;color:var(--board-text);display:block;
+}
+.staff-title-sub{font-size:.82rem;color:var(--board-text-soft);text-transform:capitalize;}
+.staff-tabs{display:flex;gap:6px;}
+.tab-btn{
+  background:var(--board-panel);border:1px solid var(--board-line);color:var(--board-text-soft);
+  padding:9px 16px;border-radius:9px;font-weight:600;font-size:.88rem;
+  transition:all .15s;
+}
+.tab-btn.active{background:var(--brass);border-color:var(--brass);color:var(--brass-ink);}
+
+.staff-body{padding:18px 20px 30px;}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:.8rem;color:var(--board-text-soft);}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+.legend .dot-libre{background:var(--libre-line);}
+.legend .dot-limpiando{background:var(--limpiando-line);}
+.legend .dot-ocupada{background:var(--ocupada-line);}
+
+.rooms-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+}
+@container shell (min-width:700px){
+  .rooms-grid{grid-template-columns:repeat(3,1fr);}
+}
+@container shell (min-width:1050px){
+  .rooms-grid{grid-template-columns:repeat(5,1fr);gap:14px;}
+}
+
+.room-tile{
+  position:relative;
+  background:var(--board-panel);
+  border:1px solid var(--board-line);
+  border-radius:12px;
+  padding:14px 14px 18px;
+  min-height:112px;
+  transition:border-color .15s, transform .1s;
+  cursor:pointer;
+}
+.room-tile:active{transform:scale(.98);}
+.room-tile.status-libre{background:var(--libre-bg);border-color:var(--libre-line);}
+.room-tile.status-limpiando{background:var(--limpiando-bg);border-color:var(--limpiando-line);}
+.room-tile.status-ocupada{background:var(--ocupada-bg);border-color:var(--ocupada-line);padding-bottom:40px;}
+
+.room-num{font-family:var(--font-display);font-weight:700;font-size:1.5rem;color:var(--brass);}
+.room-status{font-size:.82rem;font-weight:700;margin-top:2px;}
+.room-tile.status-libre .room-status{color:var(--libre-text);}
+.room-tile.status-limpiando .room-status{color:var(--limpiando-text);}
+.room-tile.status-ocupada .room-status{color:var(--ocupada-text);}
+.room-time{font-size:.76rem;color:var(--board-text-soft);margin-top:8px;}
+.room-price{font-size:.86rem;font-weight:600;color:var(--board-text);margin-top:2px;}
+.room-hint{font-size:.68rem;color:var(--board-text-soft);margin-top:8px;}
+
+/* stock tab */
+.stock-panel{max-width:640px;}
+.stock-intro{
+  background:var(--board-panel);border:1px solid var(--board-line);border-radius:10px;
+  padding:12px 14px;font-size:.86rem;color:var(--board-text-soft);margin-bottom:16px;line-height:1.45;
+}
+.stock-row{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:12px 14px;border:1px solid var(--board-line);border-radius:10px;margin-bottom:8px;background:var(--board-panel);
+}
+.stock-name{font-weight:600;}
+.stock-sub{font-size:.78rem;color:var(--board-text-soft);}
+.stock-qty{display:flex;align-items:center;gap:8px;}
+.stock-btn{
+  width:28px;height:28px;border-radius:7px;border:1px solid var(--board-line);
+  background:var(--board-panel-2);color:var(--board-text);font-size:1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.stock-btn:hover{background:var(--board-line);}
+.stock-add-form{
+  display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding:14px;border:1px dashed var(--board-line);border-radius:10px;
+}
+.stock-add-form input{
+  background:var(--board-panel-2);border:1px solid var(--board-line);color:var(--board-text);
+  border-radius:7px;padding:8px 10px;font-size:.86rem;
+}
+.stock-add-form input[type="text"]{flex:1;min-width:140px;}
+.stock-add-form input[type="number"]{width:110px;}
+.btn-primary{
+  background:var(--brass);border:none;color:var(--brass-ink);font-weight:700;
+  padding:9px 16px;border-radius:8px;font-size:.86rem;
+}
+.link-btn{background:none;border:none;color:var(--brass);font-weight:600;font-size:.86rem;padding:8px 0;}
+
+/* modal (agregar consumo) */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(10,9,6,.65);
+  display:flex;align-items:flex-end;justify-content:center;z-index:50;
+}
+@container shell (min-width:700px){
+  .modal-backdrop{align-items:center;}
+}
+.modal-backdrop[hidden]{display:none;}
+.modal-sheet{
+  background:var(--board-panel);border:1px solid var(--board-line);
+  border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
+  padding:20px;color:var(--board-text);box-shadow:0 16px 36px rgba(0,0,0,.5);
+}
+@container shell (min-width:700px){
+  .modal-sheet{border-radius:16px;}
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.modal-title{font-family:var(--font-display);font-weight:700;font-size:1.25rem;}
+.modal-close{background:none;border:none;color:var(--board-text-soft);font-size:1.5rem;line-height:1;padding:4px;}
+.modal-sub{font-size:.82rem;color:var(--board-text-soft);margin-bottom:16px;line-height:1.4;}
+
+.item-list{display:flex;flex-direction:column;gap:8px;}
+.item-chip{
+  position:relative;
+  background:var(--board-panel-2);border:1px solid var(--board-line);border-radius:10px;
+  padding:12px 56px 12px 14px;display:flex;flex-direction:column;
+}
+.item-chip .qty-badge{
+  position:absolute;top:10px;right:52px;background:var(--brass);color:var(--brass-ink);
+  font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 7px;
+}
+.item-chip .item-name{font-weight:600;font-size:.9rem;}
+.item-chip .item-price{font-size:.78rem;color:var(--board-text-soft);}
+.item-chip .plus-btn{width:30px;height:30px;right:12px;bottom:auto;top:50%;transform:translateY(-50%);}
+.item-chip .plus-btn svg{width:14px;height:14px;}
+
+.current-items{margin-top:18px;border-top:1px solid var(--board-line);padding-top:12px;}
+.current-items-title{font-size:.78rem;color:var(--board-text-soft);margin-bottom:6px;font-weight:700;text-transform:uppercase;}
+.current-item-row{display:flex;justify-content:space-between;font-size:.86rem;padding:4px 0;}
+.current-total{display:flex;justify-content:space-between;font-weight:700;font-size:1rem;margin-top:8px;padding-top:8px;border-top:1px solid var(--board-line);}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+  background:var(--brass);color:var(--brass-ink);padding:10px 18px;border-radius:10px;
+  font-weight:700;font-size:.86rem;z-index:60;max-width:90%;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+.toast[hidden]{display:none;}
+
+/* ============ VISTA ESTELA (tarjetas de color sólido de alto contraste) ============ */
+.view-estela{
+  background:var(--paper);color:var(--ink);
+  padding:22px 20px 50px;min-height:100vh;
+}
+.estela-header{margin-bottom:18px;}
+.estela-title{font-family:var(--font-body);font-weight:800;font-size:1.5rem;}
+.estela-date{color:var(--ink-soft);font-size:.95rem;margin-top:2px;text-transform:capitalize;}
+
+.estela-list{display:grid;grid-template-columns:1fr;gap:14px;}
+@container shell (min-width:980px){
+  .estela-list{grid-template-columns:repeat(2,1fr);gap:16px;}
+}
+
+.estela-card{
+  border-radius:14px;padding:18px 20px;border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.estela-card.status-libre{background:var(--libre2-bg);color:var(--libre2-text);}
+.estela-card.status-limpiando{background:var(--limpiando2-bg);color:var(--limpiando2-text);}
+.estela-card.status-ocupada{background:var(--ocupada2-bg);color:var(--ocupada2-text);}
+
+.estela-card-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;}
+.estela-room-num{font-weight:800;font-size:1.35rem;}
+.estela-room-status{
+  font-weight:700;font-size:1.02rem;padding:4px 12px;border-radius:999px;
+  background:rgba(255,255,255,.2);
+}
+
+.estela-room-count{margin-top:6px;font-size:1.05rem;opacity:.92;}
+.estela-cleaning-note{margin-top:4px;font-size:1rem;font-weight:600;}
+
+.estela-turns{margin-top:14px;border-top:1px solid rgba(255,255,255,.28);padding-top:10px;}
+.estela-turn{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.16);}
+.estela-turn:last-child{border-bottom:none;}
+.estela-turn-time{font-weight:700;font-size:1.02rem;}
+.estela-turn-items{font-size:1rem;opacity:.92;margin-top:2px;}
+.estela-empty-turns{font-size:1rem;opacity:.85;padding:6px 0;}
+</style>
+</head>
+<body>
+
+<div class="chrome-bar">
+  <div class="switch-group">
+    <span class="switch-label">Vista</span>
+    <div class="segmented" id="viewSwitch">
+      <button class="active" data-view="staff">Personal del hotel</button>
+      <button data-view="estela">Estela</button>
+    </div>
+  </div>
+  <div class="switch-group">
+    <span class="switch-label">Ver como</span>
+    <div class="segmented" id="deviceSwitch">
+      <button class="active" data-device="desktop">Escritorio</button>
+      <button data-device="tablet">Tablet</button>
+      <button data-device="mobile">Celular</button>
+    </div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-note" id="stageNote">Vista previa en escritorio</div>
+  <div class="device-frame" id="deviceFrame" data-device="desktop">
+    <div class="app-shell" id="appShell">
+
+      <!-- VISTA PERSONAL DEL HOTEL -->
+      <section class="view view-staff" id="view-staff">
+        <header class="staff-header">
+          <div>
+            <span class="staff-title-main">Habitaciones</span>
+            <span class="staff-title-sub" id="staffClock"></span>
+          </div>
+          <nav class="staff-tabs" id="staffTabs">
+            <button class="tab-btn active" data-tab="rooms">Habitaciones</button>
+            <button class="tab-btn" data-tab="stock">Stock</button>
+          </nav>
+        </header>
+        <div class="staff-body">
+          <div class="tab-panel" data-panel="rooms" id="tabRooms">
+            <div class="legend">
+              <span><i class="dot-libre"></i>Libre</span>
+              <span><i class="dot-limpiando"></i>Limpiando</span>
+              <span><i class="dot-ocupada"></i>Ocupada</span>
+            </div>
+            <div class="rooms-grid" id="staffRoomsGrid"></div>
+          </div>
+          <div class="tab-panel hidden" data-panel="stock" id="tabStock">
+            <div class="stock-panel" id="stockPanel"></div>
+          </div>
+        </div>
+        <div class="toast" id="staffToast" hidden></div>
+      </section>
+
+      <!-- VISTA ESTELA (SOLO LECTURA, SENIOR / MOBILE FIRST) -->
+      <section class="view view-estela" id="view-estela" hidden>
+        <header class="estela-header">
+          <div class="estela-title">Habitaciones de hoy</div>
+          <div class="estela-date" id="estelaDate"></div>
+        </header>
+        <div class="estela-list" id="estelaList"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR CONSUMO (SOLO HABITACIONES OCUPADAS) -->
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <span class="modal-title" id="modalRoomTitle">Habitación</span>
+      <button class="modal-close" id="modalClose" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="modal-sub">Tocá el botón + de cada producto para cargarlo en el consumo de este turno.</div>
+    <div class="item-list" id="modalItemGrid"></div>
+    <div class="current-items">
+      <div class="current-items-title">Consumo de este turno</div>
+      <div id="currentItemsList"></div>
+      <div class="current-total">
+        <span>Total</span>
+        <span id="currentTotal">$0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let rooms = [];
+let stock = [];
+let shifts = [];
+let activeConsumptions = {}; // roomId -> { items: [], total: 0 }
+let activeModalRoom = null;
+const CLEAN_MAX_MIN = 20;
+
+function formatPrice(n){ return '$' + Math.round(n).toLocaleString('es-AR'); }
+function pad2(n){ return n.toString().padStart(2,'0'); }
+
+function elapsedMinutes(dateStr){
+  if (!dateStr) return 0;
+  const d = new Date(dateStr);
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+}
+
+function formatHourMin(isoString){
+  try {
+    const d = new Date(isoString);
+    return new Intl.DateTimeFormat('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Argentina/Buenos_Aires'
+    }).format(d);
+  } catch (e) {
+    return '--:--';
+  }
+}
+
+const statusLabel = { LIBRE:'Libre', LIMPIANDO:'Limpiando', OCUPADA:'Ocupada' };
+
+let toastTimer = null;
+function showToast(msg){
+  const toast = document.getElementById('staffToast');
+  toast.textContent = msg;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+}
+
+// 1. CARGA DE DATOS DESDE LA API
+async function loadRooms(){
+  try {
+    const res = await fetch('/api/rooms');
+    if (res.ok) {
+      rooms = await res.json();
+      renderStaffRooms();
+      renderEstelaRooms();
+      // cargar consumos de las ocupadas
+      rooms.filter(r => r.estadoActual === 'OCUPADA').forEach(r => loadConsumption(r.id));
+    }
+  } catch(e) { console.error('Error cargando habitaciones:', e); }
+}
+
+async function loadStock(){
+  try {
+    const res = await fetch('/api/products');
+    if (res.ok) {
+      stock = await res.json();
+      renderStock();
+      if (activeModalRoom) renderModalItems();
+    }
+  } catch(e) { console.error('Error cargando stock:', e); }
+}
+
+async function loadShifts(){
+  try {
+    const res = await fetch('/api/shifts/today');
+    if (res.ok) {
+      shifts = await res.json();
+      renderEstelaRooms();
+    }
+  } catch(e) { console.error('Error cargando turnos:', e); }
+}
+
+async function loadConsumption(roomId){
+  try {
+    const res = await fetch(`/api/rooms/${roomId}/consumption`);
+    if (res.ok) {
+      const data = await res.json();
+      activeConsumptions[roomId] = data;
+      if (activeModalRoom && activeModalRoom.id === roomId) {
+        renderModalItems();
+      }
+    }
+  } catch(e) { console.error('Error cargando consumos:', e); }
+}
+
+// 2. VISTA PERSONAL DEL HOTEL (TABLERO)
+function renderStaffRooms(){
+  const grid = document.getElementById('staffRoomsGrid');
+  grid.innerHTML = '';
+  rooms.forEach(room => {
+    const tile = document.createElement('article');
+    tile.className = 'room-tile status-' + room.estadoActual.toLowerCase();
+    tile.dataset.room = room.id;
+
+    const num = document.createElement('div');
+    num.className = 'room-num';
+    num.textContent = pad2(room.id);
+    tile.appendChild(num);
+
+    const estado = document.createElement('div');
+    estado.className = 'room-status';
+    estado.textContent = statusLabel[room.estadoActual] || room.estadoActual;
+    tile.appendChild(estado);
+
+    if (room.estadoActual === 'OCUPADA' && room.turnoActualInicio){
+      const time = document.createElement('div');
+      time.className = 'room-time';
+      time.textContent = 'Hace ' + elapsedMinutes(room.turnoActualInicio) + ' min';
+      tile.appendChild(time);
+    } else if (room.estadoActual === 'LIMPIANDO' && room.limpiezaInicio){
+      const restante = Math.max(0, CLEAN_MAX_MIN - elapsedMinutes(room.limpiezaInicio));
+      const time = document.createElement('div');
+      time.className = 'room-time';
+      time.textContent = restante > 0 ? ('Quedan ' + restante + ' min') : 'Ya debería estar libre';
+      tile.appendChild(time);
+    }
+
+    const price = document.createElement('div');
+    price.className = 'room-price';
+    price.textContent = formatPrice(room.precioBase || 12000);
+    tile.appendChild(price);
+
+    // Botón + ÚNICAMENTE EN HABITACIONES OCUPADAS
+    if (room.estadoActual === 'OCUPADA'){
+      const addBtn = document.createElement('button');
+      addBtn.className = 'plus-btn';
+      addBtn.setAttribute('aria-label', 'Agregar consumo, habitación ' + room.id);
+      addBtn.dataset.room = room.id;
+      addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      tile.appendChild(addBtn);
+    } else {
+      const hint = document.createElement('div');
+      hint.className = 'room-hint';
+      hint.textContent = room.estadoActual === 'LIBRE' ? 'Tocar para ocupar' : 'Tocar para liberar';
+      tile.appendChild(hint);
+    }
+
+    grid.appendChild(tile);
+  });
+}
+
+document.getElementById('staffRoomsGrid').addEventListener('click', async (e) => {
+  const addBtn = e.target.closest('.plus-btn');
+  if (addBtn){
+    e.stopPropagation();
+    openModal(parseInt(addBtn.dataset.room, 10));
+    return;
+  }
+  const tile = e.target.closest('.room-tile');
+  if (tile){
+    const roomId = parseInt(tile.dataset.room, 10);
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    let nuevoEstado = 'LIBRE';
+    if (room.estadoActual === 'LIBRE') nuevoEstado = 'OCUPADA';
+    else if (room.estadoActual === 'OCUPADA') nuevoEstado = 'LIMPIANDO';
+    else if (room.estadoActual === 'LIMPIANDO') nuevoEstado = 'LIBRE';
+
+    try {
+      const res = await fetch(`/api/rooms/${roomId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nuevoEstado })
+      });
+      if (res.ok) {
+        showToast(`Habitación ${roomId}: pasa a ${statusLabel[nuevoEstado]}`);
+        loadRooms();
+        loadShifts();
+      }
+    } catch(err) { console.error('Error actualizando estado:', err); }
+  }
+});
+
+// 3. MODAL AGREGAR CONSUMO
+function openModal(roomId){
+  activeModalRoom = rooms.find(r => r.id === roomId);
+  if (!activeModalRoom) return;
+  document.getElementById('modalRoomTitle').textContent = 'Habitación ' + roomId;
+  renderModalItems();
+  document.getElementById('modalBackdrop').hidden = false;
+  loadConsumption(roomId);
+}
+
+function closeModal(){
+  document.getElementById('modalBackdrop').hidden = true;
+  activeModalRoom = null;
+  renderStaffRooms();
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'modalBackdrop') closeModal();
+});
+
+function renderModalItems(){
+  if (!activeModalRoom) return;
+  const grid = document.getElementById('modalItemGrid');
+  grid.innerHTML = '';
+  const currentConsumption = activeConsumptions[activeModalRoom.id] || { items: [], total: 0 };
+
+  stock.forEach(st => {
+    const current = currentConsumption.items.find(it => it.productoId === st.id);
+    const chip = document.createElement('div');
+    chip.className = 'item-chip';
+    chip.innerHTML =
+      (current && current.cantidad > 0 ? `<span class="qty-badge">${current.cantidad}</span>` : '') +
+      `<span class="item-name">${st.nombre}</span>` +
+      `<span class="item-price">${formatPrice(st.precio)}</span>` +
+      `<button class="plus-btn" data-item="${st.id}" aria-label="Cargar ${st.nombre}">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>`;
+    chip.querySelector('.plus-btn').addEventListener('click', () => addItemToRoom(st.id));
+    grid.appendChild(chip);
+  });
+  renderCurrentItems();
+}
+
+async function addItemToRoom(stockId){
+  if (!activeModalRoom) return;
+  try {
+    const res = await fetch(`/api/rooms/${activeModalRoom.id}/consumption`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productoId: stockId })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      activeConsumptions[activeModalRoom.id] = {
+        roomId: activeModalRoom.id,
+        items: data.allItems,
+        total: data.total
+      };
+      // Descontar stock local
+      const prod = stock.find(s => s.id === stockId);
+      if (prod) prod.stock = Math.max(0, prod.stock - 1);
+      renderModalItems();
+      renderStock();
+      showToast('Consumo cargado a Habitación ' + activeModalRoom.id);
+    }
+  } catch(e) { console.error('Error agregando consumo:', e); }
+}
+
+function renderCurrentItems(){
+  const list = document.getElementById('currentItemsList');
+  list.innerHTML = '';
+  const currentConsumption = activeConsumptions[activeModalRoom.id] || { items: [], total: 0 };
+  const items = currentConsumption.items || [];
+
+  if (items.length === 0){
+    list.innerHTML = '<div class="current-item-row" style="color:var(--board-text-soft)">Todavía no se cargó nada</div>';
+  } else {
+    items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'current-item-row';
+      row.innerHTML = `<span>${it.nombre} x${it.cantidad}</span><span>${formatPrice(it.precioUnitario * it.cantidad)}</span>`;
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('currentTotal').textContent = formatPrice(currentConsumption.total || 0);
+}
+
+// 4. PESTAÑA STOCK
+document.getElementById('staffTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('#staffTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const isStock = btn.dataset.tab === 'stock';
+  document.getElementById('tabRooms').classList.toggle('hidden', isStock);
+  document.getElementById('tabStock').classList.toggle('hidden', !isStock);
+});
+
+function renderStock(){
+  const panel = document.getElementById('stockPanel');
+  panel.innerHTML = '';
+
+  const intro = document.createElement('div');
+  intro.className = 'stock-intro';
+  intro.textContent = 'Esta pestaña es aparte del tablero principal: acá se actualiza qué productos hay disponibles para cargar en el consumo de cada habitación (cuánto queda de cada uno y el precio), y se pueden agregar productos nuevos. No afecta el estado de las habitaciones.';
+  panel.appendChild(intro);
+
+  stock.forEach(st => {
+    const row = document.createElement('div');
+    row.className = 'stock-row';
+    row.innerHTML = `
+      <div>
+        <div class="stock-name">${st.nombre}</div>
+        <div class="stock-sub">${formatPrice(st.precio)} por unidad</div>
+      </div>
+      <div class="stock-qty">
+        <button class="stock-btn" data-action="less" data-id="${st.id}">&minus;</button>
+        <span style="min-width:24px;text-align:center;font-weight:600;">${st.stock}</span>
+        <button class="stock-btn" data-action="more" data-id="${st.id}">+</button>
+      </div>
+    `;
+    panel.appendChild(row);
+  });
+
+  const formWrap = document.createElement('div');
+  formWrap.innerHTML = `
+    <button class="link-btn" id="showAddProduct">+ Agregar producto</button>
+    <div class="stock-add-form hidden" id="addProductForm">
+      <input type="text" id="newProdName" placeholder="Nombre del producto">
+      <input type="number" id="newProdPrice" placeholder="Precio">
+      <input type="number" id="newProdStock" placeholder="Stock inicial">
+      <button class="btn-primary" id="saveNewProd">Guardar</button>
+      <button class="link-btn" id="cancelNewProd" style="margin-left:6px;">Cancelar</button>
+    </div>
+  `;
+  panel.appendChild(formWrap);
+
+  panel.querySelectorAll('.stock-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = parseInt(btn.dataset.id, 10);
+      const delta = btn.dataset.action === 'more' ? 1 : -1;
+      try {
+        const res = await fetch(`/api/products/${id}/stock`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delta })
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          const item = stock.find(s => s.id === id);
+          if (item) item.stock = updated.stock;
+          renderStock();
+        }
+      } catch(e) { console.error('Error ajustando stock:', e); }
+    });
+  });
+
+  document.getElementById('showAddProduct').addEventListener('click', () => {
+    document.getElementById('addProductForm').classList.remove('hidden');
+    document.getElementById('showAddProduct').classList.add('hidden');
+  });
+  document.getElementById('cancelNewProd').addEventListener('click', () => {
+    document.getElementById('addProductForm').classList.add('hidden');
+    document.getElementById('showAddProduct').classList.remove('hidden');
+  });
+  document.getElementById('saveNewProd').addEventListener('click', async () => {
+    const nombre = document.getElementById('newProdName').value.trim();
+    const precio = parseFloat(document.getElementById('newProdPrice').value) || 0;
+    const stockQty = parseInt(document.getElementById('newProdStock').value, 10) || 0;
+    if (!nombre) return;
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, precio, stock: stockQty })
+      });
+      if (res.ok) {
+        const prod = await res.json();
+        stock.push(prod);
+        renderStock();
+        showToast(`Producto "${nombre}" agregado al inventario`);
+      }
+    } catch(e) { console.error('Error creando producto:', e); }
+  });
+}
+
+// 5. VISTA ESTELA (SOLO LECTURA / AUDITORÍA SENIOR)
+function renderEstelaRooms(){
+  const list = document.getElementById('estelaList');
+  list.innerHTML = '';
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const now = new Date();
+  document.getElementById('estelaDate').textContent = now.getDate() + ' de ' + meses[now.getMonth()];
+
+  rooms.forEach(room => {
+    const card = document.createElement('article');
+    card.className = 'estela-card status-' + room.estadoActual.toLowerCase();
+
+    const top = document.createElement('div');
+    top.className = 'estela-card-top';
+    top.innerHTML = `
+      <div class="estela-room-num">Habitación ${room.id}</div>
+      <div class="estela-room-status">${statusLabel[room.estadoActual] || room.estadoActual}</div>
+    `;
+    card.appendChild(top);
+
+    const count = document.createElement('div');
+    count.className = 'estela-room-count';
+    count.textContent = room.turnosHoyCount + (room.turnosHoyCount === 1 ? ' turno hoy' : ' turnos hoy');
+    card.appendChild(count);
+
+    if (room.estadoActual === 'LIMPIANDO' && room.limpiezaInicio){
+      const restante = Math.max(0, CLEAN_MAX_MIN - elapsedMinutes(room.limpiezaInicio));
+      const note = document.createElement('div');
+      note.className = 'estela-cleaning-note';
+      note.textContent = restante > 0
+        ? ('Limpieza en curso, quedan ' + restante + ' min (máximo 20 min)')
+        : 'Limpieza en curso, ya pasó el tiempo máximo';
+      card.appendChild(note);
+    } else if (room.estadoActual === 'OCUPADA' && room.turnoActualInicio){
+      const note = document.createElement('div');
+      note.className = 'estela-cleaning-note';
+      note.textContent = 'Turno en curso (hace ' + elapsedMinutes(room.turnoActualInicio) + ' min)';
+      card.appendChild(note);
+    }
+
+    const turnsWrap = document.createElement('div');
+    turnsWrap.className = 'estela-turns';
+
+    const roomShifts = shifts.filter(s => s.habitacionId === room.id && s.tipo === 'TURNO');
+
+    if (roomShifts.length === 0){
+      turnsWrap.innerHTML = '<div class="estela-empty-turns">Todavía no se usó hoy</div>';
+    } else {
+      roomShifts.forEach(turno => {
+        const row = document.createElement('div');
+        row.className = 'estela-turn';
+        const horaIni = formatHourMin(turno.horaInicio);
+        const horaFin = formatHourMin(turno.horaFin);
+        const itemsTexto = turno.items && turno.items.length > 0
+          ? turno.items.map(it => it.nombre + (it.cantidad > 1 ? ' x' + it.cantidad : '')).join(', ')
+          : 'Sin consumo';
+
+        row.innerHTML = `
+          <div class="estela-turn-time">Turno de ${horaIni} a ${horaFin} (${turno.duracionMinutos} min)</div>
+          <div class="estela-turn-items">${itemsTexto}</div>
+        `;
+        turnsWrap.appendChild(row);
+      });
+    }
+    card.appendChild(turnsWrap);
+    list.appendChild(card);
+  });
+}
+
+// 6. SWITCHES DE VISTA Y DISPOSITIVO
+document.getElementById('viewSwitch').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const isStaff = btn.dataset.view === 'staff';
+  document.getElementById('view-staff').hidden = !isStaff;
+  document.getElementById('view-estela').hidden = isStaff;
+});
+
+const deviceLabels = { desktop: 'escritorio', tablet: 'tablet (834 px)', mobile: 'celular (390 px)' };
+document.getElementById('deviceSwitch').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#deviceSwitch button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const device = btn.dataset.device;
+  document.getElementById('deviceFrame').dataset.device = device;
+  document.getElementById('stageNote').textContent = 'Vista previa en ' + deviceLabels[device];
+});
+
+// 7. RELOJ EN VIVO
+function updateClock(){
+  const now = new Date();
+  const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  document.getElementById('staffClock').textContent =
+    dias[now.getDay()] + ' ' + pad2(now.getDate()) + '/' + pad2(now.getMonth()+1) + ' · ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+}
+
+// 8. SERVER-SENT EVENTS (SSE)
+function setupSSE(){
+  const es = new EventSource('/api/rooms/stream');
+  es.onmessage = (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      if (payload.type === 'ROOM_STATUS_CHANGED'){
+        loadRooms();
+        loadShifts();
+      } else if (payload.type === 'STOCK_UPDATED'){
+        loadStock();
+      } else if (payload.type === 'ROOM_CONSUMPTION_UPDATED'){
+        const { roomId, items, total } = payload.data;
+        activeConsumptions[roomId] = { roomId, items, total };
+        if (activeModalRoom && activeModalRoom.id === roomId) renderModalItems();
+        loadStock();
+      }
+    } catch(err) { console.error('Error SSE:', err); }
+  };
+}
+
+// 9. SERVICE WORKER PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(console.error);
+}
+
+// 10. INICIALIZAR
+loadRooms();
+loadStock();
+loadShifts();
+setupSSE();
+updateClock();
+setInterval(updateClock, 10000);
+setInterval(() => { renderStaffRooms(); renderEstelaRooms(); }, 15000);
+</script>
+</body>
+</html>

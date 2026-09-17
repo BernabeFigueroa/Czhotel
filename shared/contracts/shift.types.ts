@@ -1,5 +1,11 @@
 export type ShiftType = 'TURNO' | 'LIMPIEZA';
 
+export interface ShiftItemSummary {
+  nombre: string;
+  cantidad: number;
+  precioUnitario: number;
+}
+
 export interface ShiftDTO {
   id: number;
   habitacionId: number;
@@ -9,6 +15,7 @@ export interface ShiftDTO {
   duracionMinutos: number;
   fecha: string;      // YYYY-MM-DD
   tipo: ShiftType;
+  items?: ShiftItemSummary[];
 }
 
 export interface ShiftCreateInput {

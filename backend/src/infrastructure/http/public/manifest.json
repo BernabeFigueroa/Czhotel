@@ -1,0 +1,17 @@
+{
+  "short_name": "Chezz",
+  "name": "Chezz Motel - Auditoría y Turnos",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#211F1A",
+  "theme_color": "#211F1A",
+  "display": "standalone",
+  "orientation": "portrait"
+}

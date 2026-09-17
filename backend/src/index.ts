@@ -1,6 +1,10 @@
 import { env } from './config/env';
 import { pool } from './infrastructure/db/PostgresPool';
-import { PostgresRoomRepository, PostgresShiftRepository } from './infrastructure/db/PostgresRepositories';
+import { 
+  PostgresRoomRepository, 
+  PostgresShiftRepository, 
+  PostgresProductRepository 
+} from './infrastructure/db/PostgresRepositories';
 import { TelegramBotService } from './infrastructure/telegram/TelegramBotService';
 import { SSEManager } from './infrastructure/http/sse/SSEManager';
 import { HandleTuyaStatusReportUseCase } from './application/use-cases/HandleTuyaStatusReport';
@@ -15,6 +19,7 @@ async function bootstrap() {
   // 1. Repositorios y Servicios de Infraestructura
   const roomRepo = new PostgresRoomRepository(pool);
   const shiftRepo = new PostgresShiftRepository(pool);
+  const productRepo = new PostgresProductRepository(pool);
   const telegramService = new TelegramBotService(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_ADMIN_CHAT_ID);
   const sseManager = new SSEManager();
 
@@ -22,6 +27,7 @@ async function bootstrap() {
   const handleStatusReportUseCase = new HandleTuyaStatusReportUseCase(
     roomRepo,
     shiftRepo,
+    productRepo,
     telegramService,
     sseManager
   );
@@ -47,7 +53,7 @@ async function bootstrap() {
   tuyaConsumer.start();
 
   // 5. Servidor HTTP (Express)
-  const app = createHttpServer(roomRepo, shiftRepo, sseManager, dailySummaryUseCase);
+  const app = createHttpServer(roomRepo, shiftRepo, productRepo, sseManager, dailySummaryUseCase);
   app.listen(env.PORT, () => {
     console.log(`🌐 Servidor HTTP corriendo en http://localhost:${env.PORT}`);
     console.log(`🩺 Health check disponible en http://localhost:${env.PORT}/health`);

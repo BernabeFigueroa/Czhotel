@@ -1,4 +1,4 @@
-export type RoomStatus = 'LIBRE' | 'OCUPADA';
+export type RoomStatus = 'LIBRE' | 'OCUPADA' | 'LIMPIANDO';
 
 export class Room {
   constructor(
@@ -7,20 +7,34 @@ export class Room {
     public readonly tuyaDeviceId: string,
     public estadoActual: RoomStatus,
     public turnoActualInicio: Date | null,
+    public limpiezaInicio: Date | null = null,
+    public readonly precioBase: number = 12000,
     public readonly turnosHoyCount: number = 0
   ) {}
 
   public occupy(startTime: Date): void {
     this.estadoActual = 'OCUPADA';
     this.turnoActualInicio = startTime;
+    this.limpiezaInicio = null;
+  }
+
+  public startCleaning(startTime: Date): void {
+    this.estadoActual = 'LIMPIANDO';
+    this.turnoActualInicio = null;
+    this.limpiezaInicio = startTime;
   }
 
   public release(): void {
     this.estadoActual = 'LIBRE';
     this.turnoActualInicio = null;
+    this.limpiezaInicio = null;
   }
 
   public isOccupied(): boolean {
     return this.estadoActual === 'OCUPADA';
+  }
+
+  public isCleaning(): boolean {
+    return this.estadoActual === 'LIMPIANDO';
   }
 }

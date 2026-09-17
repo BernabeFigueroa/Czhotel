@@ -1,4 +1,4 @@
-export type RoomStatus = 'LIBRE' | 'OCUPADA';
+export type RoomStatus = 'LIBRE' | 'OCUPADA' | 'LIMPIANDO';
 
 export interface RoomDTO {
   id: number;
@@ -6,5 +6,7 @@ export interface RoomDTO {
   tuyaDeviceId: string;
   estadoActual: RoomStatus;
   turnoActualInicio: string | null; // ISO 8601 UTC
+  limpiezaInicio: string | null;     // ISO 8601 UTC
+  precioBase: number;
   turnosHoyCount: number;
 }

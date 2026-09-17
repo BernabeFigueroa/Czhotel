@@ -1,5 +1,6 @@
 import { IRoomRepository } from '../ports/IRoomRepository';
 import { IShiftRepository } from '../ports/IShiftRepository';
+import { IProductRepository } from '../ports/IProductRepository';
 import { INotificationService } from '../ports/INotificationService';
 import { Shift } from '../../domain/entities/Shift';
 
@@ -11,6 +12,7 @@ export class HandleTuyaStatusReportUseCase {
   constructor(
     private roomRepo: IRoomRepository,
     private shiftRepo: IShiftRepository,
+    private productRepo: IProductRepository,
     private notifier: INotificationService,
     private sse: SSEBroadcaster
   ) {}
@@ -31,7 +33,7 @@ export class HandleTuyaStatusReportUseCase {
         return;
       }
 
-      await this.roomRepo.updateStatus(room.id, 'OCUPADA', eventDate);
+      await this.roomRepo.updateStatus(room.id, 'OCUPADA', eventDate, null);
 
       // Notificación inmediata
       await this.notifier.sendShiftAlert({
@@ -48,16 +50,17 @@ export class HandleTuyaStatusReportUseCase {
           roomId: room.id,
           nombre: room.nombre,
           nuevoEstado: 'OCUPADA',
-          turnoInicio: eventDate.toISOString()
+          turnoInicio: eventDate.toISOString(),
+          limpiezaInicio: null
         }
       });
       return;
     }
 
-    // ESCENARIO 2: Llave bajada (OFF) -> Fin de ocupación / limpieza
+    // ESCENARIO 2: Llave bajada (OFF) -> Fin de ocupación / paso a limpieza
     if (switchValue === false) {
       if (!room.isOccupied()) {
-        console.log(`[Idempotencia] Habitación ${room.nombre} ya está LIBRE. Ignorando evento.`);
+        console.log(`[Idempotencia] Habitación ${room.nombre} ya no está OCUPADA. Ignorando evento.`);
         return;
       }
 
@@ -71,7 +74,7 @@ export class HandleTuyaStatusReportUseCase {
       }).format(inicio);
 
       // Registrar en base de datos con su clasificación
-      await this.shiftRepo.createShift({
+      const shift = await this.shiftRepo.createShift({
         habitacionId: room.id,
         horaInicio: inicio,
         horaFin: eventDate,
@@ -80,8 +83,11 @@ export class HandleTuyaStatusReportUseCase {
         tipo
       });
 
-      // Liberar la habitación
-      await this.roomRepo.updateStatus(room.id, 'LIBRE', null);
+      // Vincular consumos de minibar a este turno
+      await this.productRepo.assignConsumptionsToShift(room.id, shift.id);
+
+      // Pasar la habitación a estado LIMPIANDO
+      await this.roomRepo.updateStatus(room.id, 'LIMPIANDO', null, eventDate);
 
       // Notificación inmediata Telegram
       await this.notifier.sendShiftAlert({
@@ -100,8 +106,9 @@ export class HandleTuyaStatusReportUseCase {
         data: {
           roomId: room.id,
           nombre: room.nombre,
-          nuevoEstado: 'LIBRE',
+          nuevoEstado: 'LIMPIANDO',
           turnoInicio: null,
+          limpiezaInicio: eventDate.toISOString(),
           duracionUltimoTurno: duracionMinutos
         }
       });
