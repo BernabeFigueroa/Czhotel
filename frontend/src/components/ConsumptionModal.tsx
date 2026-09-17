@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProductDTO, RoomConsumptionDTO } from '../../../../shared';
+import { ProductDTO, RoomConsumptionDTO, ConsumptionItemDTO } from '../types';
 
 interface ConsumptionModalProps {
   roomId: number;

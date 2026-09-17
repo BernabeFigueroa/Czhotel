@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RoomDTO, ProductDTO, ShiftDTO, RoomConsumptionDTO } from '../../../../shared';
+import { RoomDTO, ProductDTO, ShiftDTO, RoomConsumptionDTO } from '../types';
 
 export function useRoomsStream() {
   const [rooms, setRooms] = useState<RoomDTO[]>([]);

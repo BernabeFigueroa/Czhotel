@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RoomDTO, ProductDTO } from '../../../../shared';
+import { RoomDTO, ProductDTO } from '../types';
 import { StockPanel } from './StockPanel';
 
 interface StaffViewProps {
