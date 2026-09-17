@@ -1,0 +1,18 @@
+{
+  "short_name": "Auditoría",
+  "name": "Auditoría Chezz Motel",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/estelaibarra147",
+  "scope": "/",
+  "background_color": "#FBF9F2",
+  "theme_color": "#FBF9F2",
+  "display": "standalone",
+  "orientation": "portrait"
+}

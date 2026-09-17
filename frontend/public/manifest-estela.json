@@ -1,6 +1,6 @@
 {
-  "short_name": "Chezz Panel",
-  "name": "Chezz Motel - Personal",
+  "short_name": "Auditoría",
+  "name": "Auditoría Chezz Motel",
   "icons": [
     {
       "src": "/vite.svg",
@@ -8,10 +8,10 @@
       "sizes": "192x192 512x512"
     }
   ],
-  "start_url": "/",
+  "start_url": "/estelaibarra147",
   "scope": "/",
-  "background_color": "#211F1A",
-  "theme_color": "#211F1A",
+  "background_color": "#FBF9F2",
+  "theme_color": "#FBF9F2",
   "display": "standalone",
   "orientation": "portrait"
 }
