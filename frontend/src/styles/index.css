@@ -345,10 +345,18 @@ button {
 }
 
 .room-price {
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: var(--board-text);
-  margin-top: 2px;
+  margin-top: 4px;
+}
+
+.room-category {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--brass);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .room-hint {
@@ -676,6 +684,93 @@ button {
   margin-top: 3px;
   text-transform: capitalize;
   font-weight: 500;
+}
+
+.estela-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.estela-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.estela-tab-btn {
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.estela-tab-btn:hover {
+  border-color: var(--ink-soft);
+}
+
+.estela-tab-btn.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+.view-estela .stock-panel {
+  margin-top: 18px;
+}
+
+.view-estela .stock-intro {
+  color: var(--ink-soft);
+}
+
+.view-estela .stock-row {
+  background: #fff;
+  border-color: var(--paper-line);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.view-estela .stock-name {
+  color: var(--ink);
+}
+
+.view-estela .stock-sub {
+  color: var(--ink-soft);
+}
+
+.view-estela .stock-qty span {
+  color: var(--ink);
+}
+
+.view-estela .stock-btn {
+  background: var(--paper-panel);
+  border-color: var(--paper-line);
+  color: var(--ink);
+}
+
+.view-estela .stock-btn:hover {
+  background: var(--paper-line);
+}
+
+.view-estela .stock-add-form {
+  border-color: var(--paper-line);
+  background: #fff;
+}
+
+.view-estela .stock-add-form input {
+  background: var(--paper-panel);
+  border-color: var(--paper-line);
+  color: var(--ink);
+}
+
+.view-estela .stock-add-form .btn-primary {
+  background: var(--ink);
+  color: #fff;
 }
 
 .estela-badge-total {

@@ -49,9 +49,12 @@ export class TelegramBotService implements INotificationService {
                   `*DURACIÓN:* ${duracionTexto}\n` +
                   `_✨ Menor a 15 min: registrado como limpieza/mantenimiento._`;
       } else {
-        const estadoTiempo = payload.isOvertime 
-          ? `⚠️ *Superó las 2 horas estándar.*` 
-          : `✓ Turno dentro de las 2 hs estándar.`;
+        let estadoTiempo = '✓ Turno dentro de las 2 hs estándar (1 turno).';
+        if (payload.turnosCount && payload.turnosCount > 1) {
+          estadoTiempo = `⚠️ *TURNO EXTENDIDO: Computa como ${payload.turnosCount} TURNOS.*`;
+        } else if (payload.isOvertime) {
+          estadoTiempo = `⚠️ *Superó las 2 horas estándar (dentro de tolerancia).*`;
+        }
 
         mensaje = `🟢 *${payload.roomName.toUpperCase()} — FIN DE TURNO*\n\n` +
                   `*ESTADO:* LIBRE\n` +

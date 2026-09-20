@@ -8,9 +8,16 @@ import { ProductDTO, ConsumptionItemDTO, ShiftItemSummary, IProductRepository } 
 export class PostgresRoomRepository implements IRoomRepository {
   constructor(private pool: Pool) {}
 
+  private getCategoryFallback(id: number): string {
+    if ([1, 2, 15].includes(id)) return 'Suite';
+    if ([5, 12, 17].includes(id)) return 'Premium';
+    if ([3, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16].includes(id)) return 'Especial';
+    return '';
+  }
+
   async findById(id: number): Promise<Room | null> {
     const res = await this.pool.query(
-      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base FROM habitaciones WHERE id = $1`,
+      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base, categoria FROM habitaciones WHERE id = $1`,
       [id]
     );
     if (res.rows.length === 0) return null;
@@ -19,7 +26,7 @@ export class PostgresRoomRepository implements IRoomRepository {
 
   async findByTuyaDeviceId(deviceId: string): Promise<Room | null> {
     const res = await this.pool.query(
-      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base FROM habitaciones WHERE tuya_device_id = $1`,
+      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base, categoria FROM habitaciones WHERE tuya_device_id = $1`,
       [deviceId]
     );
     if (res.rows.length === 0) return null;
@@ -37,7 +44,8 @@ export class PostgresRoomRepository implements IRoomRepository {
         h.estado_actual, 
         h.turno_actual_inicio,
         h.limpieza_inicio,
-        COALESCE(h.precio_base, 12000)::numeric AS precio_base,
+        COALESCE(h.precio_base, 35000)::numeric AS precio_base,
+        COALESCE(h.categoria, '') AS categoria,
         COALESCE(COUNT(t.id), 0)::int AS turnos_hoy_count
       FROM habitaciones h
       LEFT JOIN turnos t ON t.habitacion_id = h.id AND t.fecha = $1::date AND t.tipo = 'TURNO'
@@ -52,8 +60,9 @@ export class PostgresRoomRepository implements IRoomRepository {
       r.estado_actual as RoomStatus,
       r.turno_actual_inicio ? new Date(r.turno_actual_inicio) : null,
       r.limpieza_inicio ? new Date(r.limpieza_inicio) : null,
-      Number(r.precio_base) || 12000,
-      r.turnos_hoy_count
+      Number(r.precio_base) || 35000,
+      r.turnos_hoy_count,
+      r.categoria || this.getCategoryFallback(r.id)
     ));
   }
 
@@ -79,7 +88,9 @@ export class PostgresRoomRepository implements IRoomRepository {
       row.estado_actual as RoomStatus,
       row.turno_actual_inicio ? new Date(row.turno_actual_inicio) : null,
       row.limpieza_inicio ? new Date(row.limpieza_inicio) : null,
-      Number(row.precio_base) || 12000
+      Number(row.precio_base) || 35000,
+      0,
+      row.categoria || this.getCategoryFallback(row.id)
     );
   }
 }

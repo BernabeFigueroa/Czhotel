@@ -85,17 +85,17 @@ export const App: React.FC = () => {
         <EstelaView 
           rooms={rooms} 
           shifts={shifts} 
+          products={products}
           selectedDate={selectedDate}
           todayDate={todayDate}
           onSelectDate={setSelectedDate}
+          onAdjustStock={adjustStock}
+          onAddProduct={addProduct}
         />
       ) : (
         <StaffView
           rooms={rooms}
-          products={products}
           onOpenConsumption={(id) => setActiveModalRoomId(id)}
-          onAdjustStock={adjustStock}
-          onAddProduct={addProduct}
         />
       )}
 

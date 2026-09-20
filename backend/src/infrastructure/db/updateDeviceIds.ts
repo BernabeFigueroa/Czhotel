@@ -1,24 +1,24 @@
 import { pool } from './PostgresPool';
 
 const deviceMapping: Record<number, string> = {
-  1: 'ebe0b5aeb9b9e39ca6qzzj',
-  2: 'eba5791c242f2d8f0eyldp',
-  3: 'eb8aaa710219685a89ijfx',
-  4: 'eba81db69978c13331t9ab',
-  5: 'eb78869a1a965cc445jxa3',
-  6: 'eb669c425b04001ef5vteb',
-  7: 'eb18faef6977ee5896mkoq',
-  8: 'eb36b1c6af1ca09237lsyl',
-  9: 'ebe0a8a7572fa9c2eekxvk',
-  10: 'eb2a89a4cd961975a7sain',
-  11: 'eb537d670d280e6aa8kxrg',
-  12: 'eb44d31c8c249aa6bd7k18',
-  13: 'ebcc893b7a30062a77ztaq',
-  14: 'eb66ce5dfe9f547a2d8rmm',
-  15: 'eb851e85be1f0db4201yfc',
-  16: 'eb23e9773a0be01258aot2',
-  17: 'eb044cf73f4fcc22aesrau',
-  18: 'eb43117e7fdcb18899gtlg'
+  1: 'ebc2e79856c2a946c7jrhp', // WiFi Smart Switch H1 N
+  2: 'eb285aba321fe3b091pkel', // WiFi Smart Switch H2 N
+  3: 'eb9bbcd29522d927e7eapc', // WiFi Smart Switch H3 N
+  4: 'eb8482480240d1a852dg3o', // WiFi Smart Switch H4 N
+  5: 'eb78869a1a965cc445jxa3', // WiFi Smart Switch H5 N
+  6: 'eba5cc44a5dd0378cbsyyw', // WiFi Smart Switch H6 N
+  7: 'eb866d4b5d03b6c310o5cn', // WiFi Smart Switch H7 N
+  8: 'eb36b1c6af1ca09237lsyl', // WiFi Smart Switch H8 N
+  9: 'ebe70903e21bca1475fsoz', // WiFi Smart Switch H9 N
+  10: 'ebd853b1706edd011fm0bd', // WiFi Smart Switch H10 N
+  11: 'eb16152b0bbd0656a6hbyf', // WiFi Smart Switch H11 N
+  12: 'eb29e7b3a0e41c69fbln8w', // WiFi Smart Switch H12 N
+  13: 'ebaa3ea7f9a34f08abskqy', // WiFi Smart Switch H13 N
+  14: 'eb31e1fd41680bbfcccub2', // WiFi Smart Switch H14 N
+  15: 'eb7e0462c22005c6f71upw', // WiFi Smart Switch H15 N
+  16: 'ebbbce6143704a200e8f5g', // WiFi Smart Switch H16 N
+  17: 'eb4d860c54b2006d7bkfbu', // WiFi Smart Switch H17 N
+  18: 'eb86e40a8976b0d8fbqzyc'  // WiFi Smart Switch H18 N
 };
 
 async function updateDeviceIds() {

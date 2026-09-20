@@ -7,6 +7,7 @@ export interface ShiftAlertPayload {
   durationMinutes?: number;
   tipo?: ShiftType;
   isOvertime?: boolean;
+  turnosCount?: number;
 }
 
 export interface INotificationService {

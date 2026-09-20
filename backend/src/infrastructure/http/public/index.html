@@ -187,7 +187,8 @@ button{font-family:inherit;cursor:pointer;}
 .room-tile.status-limpiando .room-status{color:var(--limpiando-text);}
 .room-tile.status-ocupada .room-status{color:var(--ocupada-text);}
 .room-time{font-size:.76rem;color:var(--board-text-soft);margin-top:8px;}
-.room-price{font-size:.86rem;font-weight:600;color:var(--board-text);margin-top:2px;}
+.room-price{font-size:.88rem;font-weight:700;color:var(--board-text);margin-top:4px;}
+.room-category{font-size:.74rem;font-weight:600;color:var(--brass);text-transform:uppercase;letter-spacing:.03em;}
 .room-hint{font-size:.68rem;color:var(--board-text-soft);margin-top:8px;}
 
 /* stock tab */
@@ -279,8 +280,39 @@ button{font-family:inherit;cursor:pointer;}
   padding:22px 20px 50px;min-height:100vh;
 }
 .estela-header{margin-bottom:18px;}
+.estela-header-main{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;}
 .estela-title{font-family:var(--font-body);font-weight:800;font-size:1.5rem;}
 .estela-date{color:var(--ink-soft);font-size:.95rem;margin-top:2px;text-transform:capitalize;}
+.estela-tabs{display:flex;gap:8px;}
+.view-estela .tab-btn{
+  background:#fff;border:1px solid var(--paper-line);color:var(--ink-soft);
+  padding:8px 16px;border-radius:9px;font-weight:700;font-size:.88rem;cursor:pointer;
+  transition:all .15s ease-in-out;
+}
+.view-estela .tab-btn.active{
+  background:var(--ink);color:#fff;border-color:var(--ink);
+}
+.view-estela .stock-panel{margin-top:14px;}
+.view-estela .stock-row{
+  background:#fff;border:1px solid var(--paper-line);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.view-estela .stock-name{color:var(--ink);}
+.view-estela .stock-sub{color:var(--ink-soft);}
+.view-estela .stock-qty span{color:var(--ink);}
+.view-estela .stock-btn{
+  background:var(--paper-panel);border-color:var(--paper-line);color:var(--ink);
+}
+.view-estela .stock-btn:hover{background:var(--paper-line);}
+.view-estela .stock-intro{color:var(--ink-soft);margin-bottom:16px;line-height:1.45;}
+.view-estela .stock-add-form{
+  border-color:var(--paper-line);background:#fff;
+}
+.view-estela .stock-add-form input{
+  background:var(--paper-panel);border-color:var(--paper-line);color:var(--ink);
+}
+.view-estela .btn-primary{
+  background:var(--ink);color:#fff;
+}
 
 .estela-list{display:grid;grid-template-columns:1fr;gap:14px;}
 @container shell (min-width:980px){
@@ -324,23 +356,13 @@ button{font-family:inherit;cursor:pointer;}
         <span class="staff-title-main">Habitaciones</span>
         <span class="staff-title-sub" id="staffClock"></span>
       </div>
-      <nav class="staff-tabs" id="staffTabs">
-        <button class="tab-btn active" data-tab="rooms">Habitaciones</button>
-        <button class="tab-btn" data-tab="stock">Stock</button>
-      </nav>
     </header>
     <div class="staff-body">
-      <div class="tab-panel" data-panel="rooms" id="tabRooms">
-        <div class="legend">
-          <span><i class="dot-libre"></i>Libre</span>
-          <span><i class="dot-limpiando"></i>Limpiando</span>
-          <span><i class="dot-ocupada"></i>Ocupada</span>
-        </div>
-        <div class="rooms-grid" id="staffRoomsGrid"></div>
+      <div class="legend">
+        <span><i class="dot-libre"></i>Libre</span>
+        <span><i class="dot-ocupada"></i>Ocupada</span>
       </div>
-      <div class="tab-panel hidden" data-panel="stock" id="tabStock">
-        <div class="stock-panel" id="stockPanel"></div>
-      </div>
+      <div class="rooms-grid" id="staffRoomsGrid"></div>
     </div>
     <div class="toast" id="staffToast" hidden></div>
   </section>
@@ -348,10 +370,25 @@ button{font-family:inherit;cursor:pointer;}
   <!-- VISTA ESTELA (URL SECRETA /estelaibarra147) -->
   <section class="view view-estela" id="view-estela" hidden>
     <header class="estela-header">
-      <div class="estela-title">Habitaciones de hoy</div>
-      <div class="estela-date" id="estelaDate"></div>
+      <div class="estela-header-main">
+        <div>
+          <div class="estela-title">Habitaciones de hoy</div>
+          <div class="estela-date" id="estelaDate"></div>
+        </div>
+        <nav class="estela-tabs" id="estelaTabs">
+          <button type="button" class="tab-btn active" data-tab="rooms">Habitaciones</button>
+          <button type="button" class="tab-btn" data-tab="stock">Gestión de stock</button>
+        </nav>
+      </div>
     </header>
-    <div class="estela-list" id="estelaList"></div>
+    <div class="estela-body">
+      <div class="tab-panel" id="estelaTabRooms">
+        <div class="estela-list" id="estelaList"></div>
+      </div>
+      <div class="tab-panel hidden" id="estelaTabStock">
+        <div class="stock-panel" id="stockPanel"></div>
+      </div>
+    </div>
   </section>
 
 </div>
@@ -391,6 +428,33 @@ function elapsedMinutes(dateStr){
   if (!dateStr) return 0;
   const d = new Date(dateStr);
   return Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+}
+
+function formatDurationMinutes(minsTotal){
+  if (minsTotal < 60) {
+    return minsTotal + ' min';
+  }
+  const hours = Math.floor(minsTotal / 60);
+  const mins = minsTotal % 60;
+  const hoursText = hours === 1 ? '1 hora' : hours + ' horas';
+  if (mins === 0) {
+    return hoursText;
+  }
+  return hoursText + ' y ' + mins + ' min';
+}
+
+function formatElapsedTime(dateStr){
+  if (!dateStr) return '';
+  return formatDurationMinutes(elapsedMinutes(dateStr));
+}
+
+function getCategoryName(room){
+  if (room.categoria) return room.categoria;
+  const id = room.id;
+  if ([1, 2, 15].includes(id)) return 'Suite';
+  if ([5, 12, 17].includes(id)) return 'Premium';
+  if ([3, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16].includes(id)) return 'Especial';
+  return '';
 }
 
 function formatHourMin(isoString){
@@ -485,10 +549,16 @@ function renderStaffRooms(){
     estado.textContent = statusLabel[room.estadoActual] || room.estadoActual;
     tile.appendChild(estado);
 
+    const price = document.createElement('div');
+    price.className = 'room-price';
+    const cat = getCategoryName(room);
+    price.innerHTML = formatPrice(room.precioBase || 35000) + (cat ? ' <span class="room-category">· ' + cat + '</span>' : '');
+    tile.appendChild(price);
+
     if (room.estadoActual === 'OCUPADA' && room.turnoActualInicio){
       const time = document.createElement('div');
       time.className = 'room-time';
-      time.textContent = 'Hace ' + elapsedMinutes(room.turnoActualInicio) + ' min';
+      time.textContent = 'Hace ' + formatElapsedTime(room.turnoActualInicio);
       tile.appendChild(time);
     } else if (room.estadoActual === 'LIMPIANDO' && room.limpiezaInicio){
       const restante = Math.max(0, CLEAN_MAX_MIN - elapsedMinutes(room.limpiezaInicio));
@@ -518,7 +588,6 @@ document.getElementById('staffRoomsGrid').addEventListener('click', (e) => {
     e.stopPropagation();
     openModal(parseInt(addBtn.dataset.room, 10));
   }
-});
 });
 
 // 3. MODAL AGREGAR CONSUMO
@@ -609,16 +678,22 @@ function renderCurrentItems(){
   document.getElementById('currentTotal').textContent = formatPrice(currentConsumption.total || 0);
 }
 
-// 4. PESTAÑA STOCK
-document.getElementById('staffTabs').addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab-btn');
-  if (!btn) return;
-  document.querySelectorAll('#staffTabs .tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const isStock = btn.dataset.tab === 'stock';
-  document.getElementById('tabRooms').classList.toggle('hidden', isStock);
-  document.getElementById('tabStock').classList.toggle('hidden', !isStock);
-});
+// 4. PESTAÑA STOCK (VISTA ESTELA /estelaibarra147)
+const estelaTabs = document.getElementById('estelaTabs');
+if (estelaTabs) {
+  estelaTabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    document.querySelectorAll('#estelaTabs .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const isStock = btn.dataset.tab === 'stock';
+    document.getElementById('estelaTabRooms').classList.toggle('hidden', isStock);
+    document.getElementById('estelaTabStock').classList.toggle('hidden', !isStock);
+    if (isStock) {
+      renderStock();
+    }
+  });
+}
 
 function renderStock(){
   const panel = document.getElementById('stockPanel');
@@ -733,18 +808,10 @@ function renderEstelaRooms(){
     count.textContent = room.turnosHoyCount + (room.turnosHoyCount === 1 ? ' turno hoy' : ' turnos hoy');
     card.appendChild(count);
 
-    if (room.estadoActual === 'LIMPIANDO' && room.limpiezaInicio){
-      const restante = Math.max(0, CLEAN_MAX_MIN - elapsedMinutes(room.limpiezaInicio));
+    if (room.estadoActual === 'OCUPADA' && room.turnoActualInicio){
       const note = document.createElement('div');
       note.className = 'estela-cleaning-note';
-      note.textContent = restante > 0
-        ? ('Limpieza en curso, quedan ' + restante + ' min (máximo 20 min)')
-        : 'Limpieza en curso, ya pasó el tiempo máximo';
-      card.appendChild(note);
-    } else if (room.estadoActual === 'OCUPADA' && room.turnoActualInicio){
-      const note = document.createElement('div');
-      note.className = 'estela-cleaning-note';
-      note.textContent = 'Turno en curso (hace ' + elapsedMinutes(room.turnoActualInicio) + ' min)';
+      note.textContent = 'Turno en curso (iniciado hace ' + formatElapsedTime(room.turnoActualInicio) + ')';
       card.appendChild(note);
     }
 
@@ -761,12 +828,13 @@ function renderEstelaRooms(){
         row.className = 'estela-turn';
         const horaIni = formatHourMin(turno.horaInicio);
         const horaFin = formatHourMin(turno.horaFin);
+        const duracionStr = formatDurationMinutes(turno.duracionMinutos);
         const itemsTexto = turno.items && turno.items.length > 0
           ? turno.items.map(it => it.nombre + (it.cantidad > 1 ? ' x' + it.cantidad : '')).join(', ')
           : 'Sin consumo';
 
         row.innerHTML = `
-          <div class="estela-turn-time">Turno de ${horaIni} a ${horaFin} (${turno.duracionMinutos} min)</div>
+          <div class="estela-turn-time">Turno de ${horaIni} a ${horaFin} (${duracionStr})</div>
           <div class="estela-turn-items">${itemsTexto}</div>
         `;
         turnsWrap.appendChild(row);

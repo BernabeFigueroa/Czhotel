@@ -48,9 +48,14 @@ export function createHttpServer(
 
       const now = new Date();
 
-      if (nuevoEstado === 'OCUPADA') {
+      let finalEstado = nuevoEstado;
+      if (finalEstado === 'LIMPIANDO') {
+        finalEstado = 'LIBRE';
+      }
+
+      if (finalEstado === 'OCUPADA') {
         await roomRepo.updateStatus(roomId, 'OCUPADA', now, null);
-      } else if (nuevoEstado === 'LIMPIANDO') {
+      } else if (finalEstado === 'LIBRE') {
         // Cerrar turno si estaba ocupada
         if (room.isOccupied()) {
           const inicio = room.turnoActualInicio ? new Date(room.turnoActualInicio) : now;
@@ -69,8 +74,6 @@ export function createHttpServer(
 
           await productRepo.assignConsumptionsToShift(roomId, shift.id);
         }
-        await roomRepo.updateStatus(roomId, 'LIMPIANDO', null, now);
-      } else if (nuevoEstado === 'LIBRE') {
         await roomRepo.updateStatus(roomId, 'LIBRE', null, null);
       }
 
@@ -79,9 +82,9 @@ export function createHttpServer(
         timestamp: now.toISOString(),
         data: {
           roomId,
-          nuevoEstado,
-          turnoInicio: nuevoEstado === 'OCUPADA' ? now.toISOString() : null,
-          limpiezaInicio: nuevoEstado === 'LIMPIANDO' ? now.toISOString() : null
+          nuevoEstado: finalEstado,
+          turnoInicio: finalEstado === 'OCUPADA' ? now.toISOString() : null,
+          limpiezaInicio: null
         }
       });
 

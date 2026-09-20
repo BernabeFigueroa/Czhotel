@@ -1,35 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { RoomDTO, ProductDTO } from '../types';
-import { StockPanel } from './StockPanel';
+import { RoomDTO } from '../types';
 
 interface StaffViewProps {
   rooms: RoomDTO[];
-  products: ProductDTO[];
   onOpenConsumption: (roomId: number) => void;
-  onAdjustStock: (productId: number, delta: number) => void;
-  onAddProduct: (nombre: string, precio: number, stock: number) => Promise<any>;
 }
 
 function pad2(n: number): string {
   return n.toString().padStart(2, '0');
 }
 
-function elapsedMinutes(dateStr: string | null): number {
-  if (!dateStr) return 0;
-  const d = new Date(dateStr);
-  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+function formatPrice(n: number): string {
+  return '$' + Math.round(n).toLocaleString('es-AR');
 }
 
-const CLEAN_MAX_MIN = 20;
+function formatElapsedTime(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const totalMinutes = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+  if (totalMinutes < 60) {
+    return `${totalMinutes} min`;
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  const hoursText = hours === 1 ? '1 hora' : `${hours} horas`;
+  if (mins === 0) {
+    return hoursText;
+  }
+  return `${hoursText} y ${mins} min`;
+}
+
+function getCategoryName(room: RoomDTO): string {
+  if (room.categoria) return room.categoria;
+  const id = room.id;
+  if ([1, 2, 15].includes(id)) return 'Suite';
+  if ([5, 12, 17].includes(id)) return 'Premium';
+  if ([3, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16].includes(id)) return 'Especial';
+  return '';
+}
 
 export const StaffView: React.FC<StaffViewProps> = ({
   rooms,
-  products,
   onOpenConsumption,
-  onAdjustStock,
-  onAddProduct,
 }) => {
-  const [activeTab, setActiveTab] = useState<'rooms' | 'stock'>('rooms');
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Reloj en vivo y refresco de minutos transcurridos
@@ -55,103 +68,69 @@ export const StaffView: React.FC<StaffViewProps> = ({
           <span className="staff-title-main">Habitaciones</span>
           <span className="staff-title-sub">{getClockString()}</span>
         </div>
-        <nav className="staff-tabs">
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'rooms' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rooms')}
-          >
-            Habitaciones
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'stock' ? 'active' : ''}`}
-            onClick={() => setActiveTab('stock')}
-          >
-            Stock
-          </button>
-        </nav>
       </header>
 
       <div className="staff-body">
-        {activeTab === 'rooms' && (
-          <div>
-            <div className="legend">
-              <span>
-                <i className="dot-libre"></i>Libre
-              </span>
-              <span>
-                <i className="dot-limpiando"></i>Limpiando
-              </span>
-              <span>
-                <i className="dot-ocupada"></i>Ocupada
-              </span>
-            </div>
+        <div className="legend">
+          <span>
+            <i className="dot-libre"></i>Libre
+          </span>
+          <span>
+            <i className="dot-ocupada"></i>Ocupada
+          </span>
+        </div>
 
-            <div className="rooms-grid">
-              {rooms.map((room) => {
-                const estado = (room.estadoActual || 'LIBRE').toUpperCase();
-                const statusKey = estado.toLowerCase();
-                const isOccupied = estado === 'OCUPADA';
-                const isCleaning = estado === 'LIMPIANDO';
+        <div className="rooms-grid">
+          {rooms.map((room) => {
+            const isOccupied = room.estadoActual === 'OCUPADA';
+            const statusKey = isOccupied ? 'ocupada' : 'libre';
+            const category = getCategoryName(room);
 
-                let timeText = '';
-                if (isOccupied && room.turnoActualInicio) {
-                  timeText = `Hace ${elapsedMinutes(room.turnoActualInicio)} min`;
-                } else if (isCleaning && room.limpiezaInicio) {
-                  const restante = Math.max(0, CLEAN_MAX_MIN - elapsedMinutes(room.limpiezaInicio));
-                  timeText = restante > 0 ? `Quedan ${restante} min` : 'Ya debería estar libre';
-                }
+            let timeText = '';
+            if (isOccupied && room.turnoActualInicio) {
+              timeText = `Hace ${formatElapsedTime(room.turnoActualInicio)}`;
+            }
 
-                return (
-                  <article
-                    key={room.id}
-                    className={`room-tile status-${statusKey}`}
+            return (
+              <article
+                key={room.id}
+                className={`room-tile status-${statusKey}`}
+              >
+                <div className="room-num">{pad2(room.id)}</div>
+                <div className="room-status">
+                  {isOccupied ? 'Ocupada' : 'Libre'}
+                </div>
+
+                <div className="room-price">
+                  {formatPrice(room.precioBase || 35000)}
+                  {category && <span className="room-category"> · {category}</span>}
+                </div>
+
+                {timeText && <div className="room-time">{timeText}</div>}
+
+                {/* Botón + ÚNICAMENTE para habitaciones Ocupadas */}
+                {isOccupied && (
+                  <button
+                    type="button"
+                    className="plus-btn"
+                    aria-label={`Agregar consumo a habitación ${room.id}`}
+                    onClick={() => onOpenConsumption(room.id)}
                   >
-                    <div className="room-num">{pad2(room.id)}</div>
-                    <div className="room-status">
-                      {room.estadoActual === 'LIBRE'
-                        ? 'Libre'
-                        : room.estadoActual === 'LIMPIANDO'
-                        ? 'Limpiando'
-                        : 'Ocupada'}
-                    </div>
-
-                    {timeText && <div className="room-time">{timeText}</div>}
-
-                    {/* Botón + ÚNICAMENTE para habitaciones Ocupadas */}
-                    {isOccupied && (
-                      <button
-                        type="button"
-                        className="plus-btn"
-                        aria-label={`Agregar consumo a habitación ${room.id}`}
-                        onClick={() => onOpenConsumption(room.id)}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          strokeWidth="2.4"
-                          strokeLinecap="round"
-                        >
-                          <line x1="12" y1="5" x2="12" y2="19" />
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                      </button>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'stock' && (
-          <StockPanel
-            products={products}
-            onAdjustStock={onAdjustStock}
-            onAddProduct={onAddProduct}
-          />
-        )}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                )}
+              </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

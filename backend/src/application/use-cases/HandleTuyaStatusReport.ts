@@ -57,7 +57,7 @@ export class HandleTuyaStatusReportUseCase {
       return;
     }
 
-    // ESCENARIO 2: Llave bajada (OFF) -> Fin de ocupación / paso a limpieza
+    // ESCENARIO 2: Llave bajada (OFF) -> Fin de ocupación / paso a LIBRE
     if (switchValue === false) {
       if (!room.isOccupied()) {
         console.log(`[Idempotencia] Habitación ${room.nombre} ya no está OCUPADA. Ignorando evento.`);
@@ -68,6 +68,7 @@ export class HandleTuyaStatusReportUseCase {
       const duracionMinutos = Shift.calculateDurationMinutes(inicio, eventDate);
       const tipo = Shift.classify(duracionMinutos); // <= 15m limpieza, > 15m turno
       const isOvertime = Shift.isOvertime(duracionMinutos); // > 120m (2 horas)
+      const turnosCount = Shift.calculateTurnosCount(duracionMinutos);
       
       const fechaBase = Shift.toArgentinaDateString(eventDate);
 
@@ -84,8 +85,8 @@ export class HandleTuyaStatusReportUseCase {
       // Vincular consumos de minibar a este turno
       await this.productRepo.assignConsumptionsToShift(room.id, shift.id);
 
-      // Pasar la habitación a estado LIMPIANDO
-      await this.roomRepo.updateStatus(room.id, 'LIMPIANDO', null, eventDate);
+      // Pasar la habitación a estado LIBRE directamente (modelo binario)
+      await this.roomRepo.updateStatus(room.id, 'LIBRE', null, null);
 
       // Notificación inmediata Telegram
       await this.notifier.sendShiftAlert({
@@ -94,7 +95,8 @@ export class HandleTuyaStatusReportUseCase {
         timestamp: eventDate,
         durationMinutes: duracionMinutos,
         tipo,
-        isOvertime
+        isOvertime,
+        turnosCount
       });
 
       // Streaming PWA
@@ -104,9 +106,9 @@ export class HandleTuyaStatusReportUseCase {
         data: {
           roomId: room.id,
           nombre: room.nombre,
-          nuevoEstado: 'LIMPIANDO',
+          nuevoEstado: 'LIBRE',
           turnoInicio: null,
-          limpiezaInicio: eventDate.toISOString(),
+          limpiezaInicio: null,
           duracionUltimoTurno: duracionMinutos
         }
       });

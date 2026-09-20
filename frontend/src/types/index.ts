@@ -8,6 +8,7 @@ export interface RoomDTO {
   turnoActualInicio: string | null;
   limpiezaInicio: string | null;
   precioBase: number;
+  categoria?: string;
   turnosHoyCount: number;
 }
 

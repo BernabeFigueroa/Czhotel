@@ -8,8 +8,9 @@ export class Room {
     public estadoActual: RoomStatus,
     public turnoActualInicio: Date | null,
     public limpiezaInicio: Date | null = null,
-    public readonly precioBase: number = 12000,
-    public readonly turnosHoyCount: number = 0
+    public readonly precioBase: number = 35000,
+    public readonly turnosHoyCount: number = 0,
+    public readonly categoria: string = ''
   ) {}
 
   public occupy(startTime: Date): void {

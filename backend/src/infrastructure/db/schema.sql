@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS habitaciones (
     estado_actual VARCHAR(20) NOT NULL DEFAULT 'LIBRE',
     turno_actual_inicio TIMESTAMPTZ NULL,
     limpieza_inicio TIMESTAMPTZ NULL,
-    precio_base NUMERIC(10, 2) NOT NULL DEFAULT 12000,
+    categoria VARCHAR(50) NULL,
+    precio_base NUMERIC(10, 2) NOT NULL DEFAULT 35000,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -45,29 +46,31 @@ CREATE INDEX IF NOT EXISTS idx_consumos_habitacion_activo ON consumos(habitacion
 CREATE INDEX IF NOT EXISTS idx_consumos_turno ON consumos(turno_id);
 
 -- Semilla oficial con los 18 relés Tuya reales
-INSERT INTO habitaciones (id, nombre, tuya_device_id, estado_actual, precio_base)
+INSERT INTO habitaciones (id, nombre, tuya_device_id, estado_actual, categoria, precio_base)
 VALUES 
-  (1, 'Habitación 1', 'ebe0b5aeb9b9e39ca6qzzj', 'LIBRE', 12000),
-  (2, 'Habitación 2', 'eba5791c242f2d8f0eyldp', 'LIBRE', 12000),
-  (3, 'Habitación 3', 'eb8aaa710219685a89ijfx', 'LIBRE', 12000),
-  (4, 'Habitación 4', 'eba81db69978c13331t9ab', 'LIBRE', 12000),
-  (5, 'Habitación 5', 'eb78869a1a965cc445jxa3', 'LIBRE', 12000),
-  (6, 'Habitación 6', 'eb669c425b04001ef5vteb', 'LIBRE', 12000),
-  (7, 'Habitación 7', 'eb18faef6977ee5896mkoq', 'LIBRE', 12000),
-  (8, 'Habitación 8', 'eb36b1c6af1ca09237lsyl', 'LIBRE', 12000),
-  (9, 'Habitación 9', 'ebe0a8a7572fa9c2eekxvk', 'LIBRE', 12000),
-  (10, 'Habitación 10', 'eb2a89a4cd961975a7sain', 'LIBRE', 12000),
-  (11, 'Habitación 11', 'eb537d670d280e6aa8kxrg', 'LIBRE', 12000),
-  (12, 'Habitación 12', 'eb44d31c8c249aa6bd7k18', 'LIBRE', 12000),
-  (13, 'Habitación 13', 'ebcc893b7a30062a77ztaq', 'LIBRE', 12000),
-  (14, 'Habitación 14', 'eb66ce5dfe9f547a2d8rmm', 'LIBRE', 12000),
-  (15, 'Habitación 15', 'eb851e85be1f0db4201yfc', 'LIBRE', 12000),
-  (16, 'Habitación 16', 'eb23e9773a0be01258aot2', 'LIBRE', 12000),
-  (17, 'Habitación 17', 'eb044cf73f4fcc22aesrau', 'LIBRE', 12000),
-  (18, 'Habitación 18', 'eb43117e7fdcb18899gtlg', 'LIBRE', 12000)
+  (1, 'Habitación 1', 'ebe0b5aeb9b9e39ca6qzzj', 'LIBRE', 'Suite', 60000),
+  (2, 'Habitación 2', 'eba5791c242f2d8f0eyldp', 'LIBRE', 'Suite', 60000),
+  (3, 'Habitación 3', 'eb8aaa710219685a89ijfx', 'LIBRE', 'Especial', 35000),
+  (4, 'Habitación 4', 'eba81db69978c13331t9ab', 'LIBRE', 'Especial', 35000),
+  (5, 'Habitación 5', 'eb78869a1a965cc445jxa3', 'LIBRE', 'Premium', 40000),
+  (6, 'Habitación 6', 'eb669c425b04001ef5vteb', 'LIBRE', 'Especial', 35000),
+  (7, 'Habitación 7', 'eb18faef6977ee5896mkoq', 'LIBRE', 'Especial', 35000),
+  (8, 'Habitación 8', 'eb36b1c6af1ca09237lsyl', 'LIBRE', 'Especial', 35000),
+  (9, 'Habitación 9', 'ebe0a8a7572fa9c2eekxvk', 'LIBRE', 'Especial', 35000),
+  (10, 'Habitación 10', 'eb2a89a4cd961975a7sain', 'LIBRE', 'Especial', 35000),
+  (11, 'Habitación 11', 'eb537d670d280e6aa8kxrg', 'LIBRE', 'Especial', 35000),
+  (12, 'Habitación 12', 'eb44d31c8c249aa6bd7k18', 'LIBRE', 'Premium', 40000),
+  (13, 'Habitación 13', 'ebcc893b7a30062a77ztaq', 'LIBRE', 'Especial', 35000),
+  (14, 'Habitación 14', 'eb66ce5dfe9f547a2d8rmm', 'LIBRE', 'Especial', 35000),
+  (15, 'Habitación 15', 'eb851e85be1f0db4201yfc', 'LIBRE', 'Suite', 60000),
+  (16, 'Habitación 16', 'eb23e9773a0be01258aot2', 'LIBRE', 'Especial', 35000),
+  (17, 'Habitación 17', 'eb044cf73f4fcc22aesrau', 'LIBRE', 'Premium', 40000),
+  (18, 'Habitación 18', 'eb43117e7fdcb18899gtlg', 'LIBRE', 'Especial', 35000)
 ON CONFLICT (id) DO UPDATE SET 
   tuya_device_id = EXCLUDED.tuya_device_id,
-  nombre = EXCLUDED.nombre;
+  nombre = EXCLUDED.nombre,
+  categoria = EXCLUDED.categoria,
+  precio_base = EXCLUDED.precio_base;
 
 -- Semilla oficial de productos
 INSERT INTO productos (id, nombre, precio, stock)

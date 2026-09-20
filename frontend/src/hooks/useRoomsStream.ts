@@ -1,16 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RoomDTO, ProductDTO, ShiftDTO, RoomConsumptionDTO } from '../types';
 
-const INITIAL_ROOMS: RoomDTO[] = Array.from({ length: 18 }, (_, i) => ({
-  id: i + 1,
-  nombre: `Habitación ${i + 1}`,
-  tuyaDeviceId: '',
-  estadoActual: 'LIBRE',
-  turnoActualInicio: null,
-  limpiezaInicio: null,
-  precioBase: 12000,
-  turnosHoyCount: 0,
-}));
+function getInitialCategoryAndPrice(id: number): { categoria: string; precioBase: number } {
+  if ([1, 2, 15].includes(id)) return { categoria: 'Suite', precioBase: 60000 };
+  if ([5, 12, 17].includes(id)) return { categoria: 'Premium', precioBase: 40000 };
+  return { categoria: 'Especial', precioBase: 35000 };
+}
+
+const INITIAL_ROOMS: RoomDTO[] = Array.from({ length: 18 }, (_, i) => {
+  const id = i + 1;
+  const meta = getInitialCategoryAndPrice(id);
+  return {
+    id,
+    nombre: `Habitación ${id}`,
+    tuyaDeviceId: '',
+    estadoActual: 'LIBRE',
+    turnoActualInicio: null,
+    limpiezaInicio: null,
+    precioBase: meta.precioBase,
+    categoria: meta.categoria,
+    turnosHoyCount: 0,
+  };
+});
 
 const INITIAL_PRODUCTS: ProductDTO[] = [
   { id: 1, nombre: 'Preservativos', precio: 1500, stock: 120 },
