@@ -35,7 +35,7 @@ function getCategoryName(room: RoomDTO): string {
   const id = room.id;
   if ([1, 2, 15].includes(id)) return 'Suite';
   if ([5, 12, 17].includes(id)) return 'Premium';
-  if ([3, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16].includes(id)) return 'Especial';
+  if ([3, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16, 18].includes(id)) return 'Especial';
   return '';
 }
 
