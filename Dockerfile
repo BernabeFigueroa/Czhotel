@@ -21,4 +21,4 @@ ENV PORT=10000
 
 EXPOSE 10000
 
-CMD ["npx", "tsx", "src/index.ts"]
+CMD ["npm", "start"]

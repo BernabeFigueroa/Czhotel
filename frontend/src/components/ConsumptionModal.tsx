@@ -26,14 +26,19 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
   onUpdateVehicle,
 }) => {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>(currentVehicle);
+  const userInteractedRef = React.useRef<boolean>(false);
   const currentItems = consumption?.items || [];
   const currentTotal = consumption?.total || 0;
 
   useEffect(() => {
+    if (userInteractedRef.current && currentVehicle === 'AUTO') {
+      return;
+    }
     setSelectedVehicle(currentVehicle);
   }, [currentVehicle]);
 
   const handleSelectVehicle = (vehicle: VehicleType) => {
+    userInteractedRef.current = true;
     setSelectedVehicle(vehicle);
     onUpdateVehicle(vehicle);
   };

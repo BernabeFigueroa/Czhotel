@@ -84,20 +84,23 @@ export function useRoomsStream() {
           const stored = getStoredVehicles();
           setRooms(data.map((r) => {
             const isOccupied = (r.estadoActual || '').toUpperCase() === 'OCUPADA';
-            if (!isOccupied) {
-              if (stored[r.id]) clearStoredVehicle(r.id);
-              return { ...r, vehiculo: 'AUTO' };
-            }
-
             const serverVeh = (r.vehiculo || '').toUpperCase();
+            
+            // 1. Si el servidor ya tiene MOTO o DIDI confirmado, actualizar local
             if (serverVeh === 'MOTO' || serverVeh === 'DIDI') {
               setStoredVehicle(r.id, serverVeh as any);
               return { ...r, vehiculo: serverVeh as any };
             }
 
+            // 2. Si el personal seleccionó MOTO o DIDI localmente, PRESERVARLO prioritariamente
             const localVeh = stored[r.id];
             if (localVeh === 'MOTO' || localVeh === 'DIDI') {
               return { ...r, vehiculo: localVeh };
+            }
+
+            // 3. Si la habitación no está ocupada y no hay selección activa, limpiar
+            if (!isOccupied && stored[r.id]) {
+              clearStoredVehicle(r.id);
             }
 
             return { ...r, vehiculo: 'AUTO' };
@@ -242,15 +245,24 @@ export function useRoomsStream() {
   const updateRoomVehicle = async (roomId: number, vehiculo: 'AUTO' | 'MOTO' | 'DIDI') => {
     try {
       setStoredVehicle(roomId, vehiculo);
-      // Actualización optimista local
+      // Actualización optimista local inmediata
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, vehiculo } : r))
       );
-      await fetch(`/api/rooms/${roomId}/vehicle`, {
+      
+      const res = await fetch(`/api/rooms/${roomId}/vehicle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vehiculo }),
       });
+      if (!res.ok) {
+        // Fallback por si algún proxy o cortafuegos rechaza el verbo PATCH
+        await fetch(`/api/rooms/${roomId}/vehicle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vehiculo }),
+        });
+      }
     } catch (e) {
       console.error(`[RoomsStream] Error actualizando vehículo para habitación ${roomId}:`, e);
     }

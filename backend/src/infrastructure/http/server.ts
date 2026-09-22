@@ -99,7 +99,7 @@ export function createHttpServer(
   });
 
   // Actualizar vehículo de la habitación ocupada (Auto, Moto, DiDi)
-  app.patch('/api/rooms/:id/vehicle', async (req, res) => {
+  const handleUpdateVehicle = async (req: express.Request, res: express.Response) => {
     try {
       const roomId = parseInt(req.params.id, 10);
       const { vehiculo } = req.body;
@@ -128,7 +128,10 @@ export function createHttpServer(
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
-  });
+  };
+
+  app.patch('/api/rooms/:id/vehicle', handleUpdateVehicle);
+  app.post('/api/rooms/:id/vehicle', handleUpdateVehicle);
 
   // Listar productos
   app.get('/api/products', async (req, res) => {
@@ -318,14 +321,15 @@ export function createHttpServer(
     });
   });
 
-  // Servir estáticos de la PWA (index.html, manifest.json, sw.js, icon.svg)
+  // Servir estáticos de la PWA o redirigir a la app oficial en Vercel
   const publicDir = path.join(__dirname, 'public');
   app.use(express.static(publicDir));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path === '/health') {
       return next();
     }
-    res.sendFile(path.join(publicDir, 'index.html'));
+    // Redirigir a Vercel para garantizar acceso a la versión más reciente del panel React
+    return res.redirect(302, `https://czhotel.vercel.app${req.originalUrl}`);
   });
 
   return app;
