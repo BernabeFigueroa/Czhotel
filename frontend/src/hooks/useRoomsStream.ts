@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RoomDTO, ProductDTO, ShiftDTO, RoomConsumptionDTO } from '../types';
 
 function getInitialCategoryAndPrice(id: number): { categoria: string; precioBase: number } {
@@ -45,7 +45,9 @@ export function useRoomsStream() {
   const [consumptions, setConsumptions] = useState<Record<number, RoomConsumptionDTO>>({});
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [todayDate, setTodayDate] = useState<string>(getTodayArgentina);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayArgentina);
+  const lastTodayRef = useRef<string>(getTodayArgentina());
 
   // 1. Cargar habitaciones
   const fetchRooms = useCallback(async () => {
@@ -191,20 +193,44 @@ export function useRoomsStream() {
     return null;
   };
 
+  // Actualizar vehículo de la habitación
+  const updateRoomVehicle = async (roomId: number, vehiculo: 'AUTO' | 'MOTO' | 'DIDI') => {
+    try {
+      // Actualización optimista
+      setRooms((prev) =>
+        prev.map((r) => (r.id === roomId ? { ...r, vehiculo } : r))
+      );
+      await fetch(`/api/rooms/${roomId}/vehicle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehiculo }),
+      });
+    } catch (e) {
+      console.error(`[RoomsStream] Error actualizando vehículo para habitación ${roomId}:`, e);
+    }
+  };
+
   // Detección automática del cruce de medianoche en Argentina (00:00 hs)
-  // Limpia la grilla automáticamente al cambiar el día y carga el nuevo día
+  // Limpia la grilla automáticamente al cambiar el día y carga el nuevo día SOLO si el usuario estaba en "hoy"
   useEffect(() => {
     const timer = setInterval(() => {
       const currentToday = getTodayArgentina();
-      setSelectedDate((prevDate) => {
-        // Si el usuario estaba viendo el día de hoy y el reloj cruzó las 00:00 hs
-        if (prevDate !== currentToday) {
-          fetchShifts(currentToday);
-          fetchRooms();
-          return currentToday;
-        }
-        return prevDate;
-      });
+      if (currentToday !== lastTodayRef.current) {
+        const previousToday = lastTodayRef.current;
+        lastTodayRef.current = currentToday;
+        setTodayDate(currentToday);
+
+        setSelectedDate((prevSelectedDate) => {
+          // Si el usuario estaba viendo el día de hoy (que antes de medianoche era previousToday),
+          // lo pasamos automáticamente al nuevo día. Si estaba mirando un día anterior (histórico), respetamos su vista.
+          if (prevSelectedDate === previousToday) {
+            fetchShifts(currentToday);
+            fetchRooms();
+            return currentToday;
+          }
+          return prevSelectedDate;
+        });
+      }
     }, 15000);
 
     return () => clearInterval(timer);
@@ -234,7 +260,7 @@ export function useRoomsStream() {
         try {
           const payload = JSON.parse(event.data);
           if (payload.type === 'ROOM_STATUS_CHANGED') {
-            const { roomId, nuevoEstado, turnoInicio, limpiezaInicio } = payload.data;
+            const { roomId, nuevoEstado, turnoInicio, limpiezaInicio, vehiculo } = payload.data;
             setRooms((prev) =>
               prev.map((r) => {
                 if (r.id === roomId) {
@@ -244,15 +270,26 @@ export function useRoomsStream() {
                     estadoActual: nuevoEstado,
                     turnoActualInicio: turnoInicio || null,
                     limpiezaInicio: limpiezaInicio || null,
-                    turnosHoyCount: turnosHoy
+                    turnosHoyCount: turnosHoy,
+                    vehiculo: vehiculo || r.vehiculo || 'AUTO'
                   };
                 }
                 return r;
               })
             );
             if (nuevoEstado === 'LIMPIANDO' || nuevoEstado === 'LIBRE') {
+              setConsumptions((prev) => {
+                const next = { ...prev };
+                delete next[roomId];
+                return next;
+              });
               fetchShifts(selectedDate);
             }
+          } else if (payload.type === 'ROOM_VEHICLE_CHANGED') {
+            const { roomId, vehiculo } = payload.data;
+            setRooms((prev) =>
+              prev.map((r) => (r.id === roomId ? { ...r, vehiculo } : r))
+            );
           } else if (payload.type === 'STOCK_UPDATED') {
             const updatedProd: ProductDTO = payload.data;
             setProducts((prev) => {
@@ -305,7 +342,6 @@ export function useRoomsStream() {
     }
   }, [rooms, fetchAllOccupiedConsumptions]);
 
-  const todayDate = getTodayArgentina();
 
   return {
     rooms,
@@ -321,6 +357,7 @@ export function useRoomsStream() {
     adjustStock,
     addProduct,
     addConsumptionToRoom,
+    updateRoomVehicle,
     fetchRoomConsumption,
     refreshRooms: fetchRooms
   };

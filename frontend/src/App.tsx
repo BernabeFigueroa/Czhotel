@@ -16,6 +16,7 @@ export const App: React.FC = () => {
     adjustStock,
     addProduct,
     addConsumptionToRoom,
+    updateRoomVehicle,
   } = useRoomsStream();
 
   const [activeModalRoomId, setActiveModalRoomId] = useState<number | null>(null);
@@ -86,6 +87,7 @@ export const App: React.FC = () => {
           rooms={rooms} 
           shifts={shifts} 
           products={products}
+          consumptions={consumptions}
           selectedDate={selectedDate}
           todayDate={todayDate}
           onSelectDate={setSelectedDate}
@@ -105,8 +107,10 @@ export const App: React.FC = () => {
           roomId={activeModalRoomId}
           products={products}
           consumption={consumptions[activeModalRoomId]}
+          currentVehicle={rooms.find((r) => r.id === activeModalRoomId)?.vehiculo || 'AUTO'}
           onClose={() => setActiveModalRoomId(null)}
           onAddItem={(productId) => addConsumptionToRoom(activeModalRoomId, productId)}
+          onUpdateVehicle={(vehicle) => updateRoomVehicle(activeModalRoomId, vehicle)}
         />
       )}
     </div>

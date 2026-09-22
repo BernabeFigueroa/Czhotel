@@ -10,13 +10,15 @@ export class Room {
     public limpiezaInicio: Date | null = null,
     public readonly precioBase: number = 35000,
     public readonly turnosHoyCount: number = 0,
-    public readonly categoria: string = ''
+    public readonly categoria: string = '',
+    public vehiculo: string = 'AUTO'
   ) {}
 
   public occupy(startTime: Date): void {
     this.estadoActual = 'OCUPADA';
     this.turnoActualInicio = startTime;
     this.limpiezaInicio = null;
+    this.vehiculo = 'AUTO';
   }
 
   public startCleaning(startTime: Date): void {
@@ -29,6 +31,7 @@ export class Room {
     this.estadoActual = 'LIBRE';
     this.turnoActualInicio = null;
     this.limpiezaInicio = null;
+    this.vehiculo = 'AUTO';
   }
 
   public isOccupied(): boolean {

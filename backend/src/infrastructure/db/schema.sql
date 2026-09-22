@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS habitaciones (
     limpieza_inicio TIMESTAMPTZ NULL,
     categoria VARCHAR(50) NULL,
     precio_base NUMERIC(10, 2) NOT NULL DEFAULT 35000,
+    vehiculo VARCHAR(20) NOT NULL DEFAULT 'AUTO',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS turnos (
     duracion_minutos INT NOT NULL CHECK (duracion_minutos >= 0),
     fecha DATE NOT NULL,
     tipo VARCHAR(20) NOT NULL DEFAULT 'TURNO' CHECK (tipo IN ('TURNO', 'LIMPIEZA')),
+    vehiculo VARCHAR(20) NOT NULL DEFAULT 'AUTO',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

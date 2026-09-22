@@ -8,6 +8,7 @@ export interface ShiftAlertPayload {
   tipo?: ShiftType;
   isOvertime?: boolean;
   turnosCount?: number;
+  vehiculo?: string;
 }
 
 export interface INotificationService {

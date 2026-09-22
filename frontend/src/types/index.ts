@@ -1,4 +1,5 @@
 export type RoomStatus = 'LIBRE' | 'OCUPADA' | 'LIMPIANDO';
+export type VehicleType = 'AUTO' | 'MOTO' | 'DIDI';
 
 export interface RoomDTO {
   id: number;
@@ -10,6 +11,7 @@ export interface RoomDTO {
   precioBase: number;
   categoria?: string;
   turnosHoyCount: number;
+  vehiculo?: VehicleType;
 }
 
 export interface ProductDTO {
@@ -50,5 +52,6 @@ export interface ShiftDTO {
   duracionMinutos: number;
   fecha: string;
   tipo: ShiftType;
+  vehiculo?: VehicleType;
   items?: ShiftItemSummary[];
 }

@@ -8,7 +8,8 @@ export class Shift {
     public readonly horaFin: Date,
     public readonly duracionMinutos: number,
     public readonly fecha: string,
-    public readonly tipo: ShiftType = 'TURNO'
+    public readonly tipo: ShiftType = 'TURNO',
+    public readonly vehiculo: string = 'AUTO'
   ) {}
 
   public static calculateDurationMinutes(start: Date, end: Date): number {

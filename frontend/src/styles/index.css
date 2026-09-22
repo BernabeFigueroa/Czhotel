@@ -344,6 +344,19 @@ button {
   margin-top: 8px;
 }
 
+.room-vehicle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--board-text);
+  margin-top: 6px;
+}
+
 .room-price {
   font-size: 0.88rem;
   font-weight: 700;
@@ -549,6 +562,66 @@ button {
   line-height: 1.4;
 }
 
+/* Selector de vehículo (Auto, Moto, DiDi) - 3 Rectángulos */
+.vehicle-selector-box {
+  margin-bottom: 16px;
+  background: var(--board-panel-2);
+  border: 1px solid var(--board-line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.vehicle-selector-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--board-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.vehicle-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.vehicle-card {
+  background: var(--board-panel);
+  border: 2px solid var(--board-line);
+  border-radius: 10px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--board-text-soft);
+  transition: all 0.18s ease-in-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+.vehicle-card:hover {
+  border-color: var(--board-text-soft);
+  color: var(--board-text);
+  transform: translateY(-1px);
+}
+
+.vehicle-card.active {
+  background: #231E15;
+  border-color: var(--brass);
+  color: var(--brass);
+  box-shadow: 0 0 0 1px var(--brass), 0 4px 12px rgba(201, 162, 39, 0.25);
+  font-weight: 800;
+}
+
+.vehicle-card-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .item-list {
   display: flex;
   flex-direction: column;
@@ -657,6 +730,60 @@ button {
   color: var(--ink);
   padding: 22px 20px 50px;
   min-height: 100vh;
+}
+
+/* Banner de instalación PWA para Android / Samsung */
+.estela-install-banner {
+  background: #FFFBEA;
+  border: 1px solid #F6E05E;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.estela-install-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.estela-install-icon {
+  font-size: 1.5rem;
+}
+
+.estela-install-title {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: #744210;
+}
+
+.estela-install-desc {
+  font-size: 0.84rem;
+  color: #975A16;
+  margin-top: 1px;
+}
+
+.estela-install-btn {
+  background: #D69E2E;
+  color: #1A202C;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.estela-install-btn:hover {
+  background: #B7791F;
+  color: #FFFFFF;
 }
 
 .estela-header {
@@ -942,27 +1069,128 @@ button {
 
 .estela-room-num {
   font-weight: 800;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
 }
 
 .estela-room-status {
   font-weight: 700;
-  font-size: 1.02rem;
-  padding: 4px 12px;
+  font-size: 1.06rem;
+  padding: 5px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.2);
 }
 
 .estela-room-count {
   margin-top: 6px;
-  font-size: 1.05rem;
-  opacity: 0.92;
+  font-size: 1.12rem;
+  opacity: 0.95;
+  font-weight: 600;
 }
 
 .estela-cleaning-note {
   margin-top: 4px;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
+}
+
+/* Caja de Cobro Activo en Vista Estela */
+.estela-active-billing-box {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  backdrop-filter: blur(6px);
+}
+
+.estela-billing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.estela-vehicle-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.estela-billing-time {
+  font-size: 0.88rem;
+  opacity: 0.92;
+  font-weight: 600;
+}
+
+.estela-billing-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 10px;
+  font-size: 0.98rem;
+}
+
+.estela-billing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.estela-row-val {
+  font-weight: 800;
+}
+
+.estela-active-items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 4px 0;
+}
+
+.estela-active-item-chip {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.estela-total-charge-banner {
+  margin-top: 12px;
+  background: #FFFFFF;
+  color: #1A1A1A;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+.estela-charge-label {
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #333333;
+}
+
+.estela-charge-amount {
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: #B23A2E;
+  font-family: var(--font-display);
+  line-height: 1;
 }
 
 .estela-turns {
@@ -971,8 +1199,17 @@ button {
   padding-top: 10px;
 }
 
+.estela-turns-heading {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  opacity: 0.88;
+  margin-bottom: 8px;
+}
+
 .estela-turn {
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
@@ -980,20 +1217,45 @@ button {
   border-bottom: none;
 }
 
+.estela-turn-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.estela-turn-vehicle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .estela-turn-time {
   font-weight: 700;
-  font-size: 1.02rem;
+  font-size: 1.06rem;
 }
 
 .estela-turn-items {
-  font-size: 1rem;
-  opacity: 0.92;
-  margin-top: 2px;
+  font-size: 0.96rem;
+  opacity: 0.95;
+  margin-top: 4px;
+}
+
+.estela-turn-total-line {
+  font-size: 0.96rem;
+  margin-top: 4px;
+  opacity: 0.98;
 }
 
 .estela-empty-turns {
-  font-size: 1rem;
-  opacity: 0.85;
+  font-size: 1.05rem;
+  opacity: 0.88;
   padding: 6px 0;
 }
 
@@ -1040,6 +1302,87 @@ button {
 
 .estela-card-past .estela-empty-turns {
   color: var(--ink-soft);
+}
+
+/* ============ CONFIGURACIÓN DE TAMAÑOS DE TEXTO (VISTA ESTELA) ============ */
+/* 1. Nivel Grande (+18%) */
+.view-estela[data-font-size="large"] .estela-title { font-size: 1.8rem; }
+.view-estela[data-font-size="large"] .estela-date { font-size: 1.1rem; }
+.view-estela[data-font-size="large"] .estela-room-num { font-size: 1.7rem; }
+.view-estela[data-font-size="large"] .estela-room-status { font-size: 1.22rem; }
+.view-estela[data-font-size="large"] .estela-room-count { font-size: 1.28rem; }
+.view-estela[data-font-size="large"] .estela-cleaning-note { font-size: 1.2rem; }
+.view-estela[data-font-size="large"] .estela-turn-time { font-size: 1.24rem; }
+.view-estela[data-font-size="large"] .estela-turn-items { font-size: 1.2rem; }
+.view-estela[data-font-size="large"] .estela-empty-turns { font-size: 1.2rem; }
+.view-estela[data-font-size="large"] .estela-pill-btn { font-size: 1.02rem; padding: 9px 18px; }
+.view-estela[data-font-size="large"] .estela-date-input { font-size: 1.02rem; }
+.view-estela[data-font-size="large"] .estela-historical-notice { font-size: 1rem; }
+.view-estela[data-font-size="large"] .stock-name { font-size: 1.25rem; }
+.view-estela[data-font-size="large"] .stock-sub { font-size: 1.05rem; }
+.view-estela[data-font-size="large"] .stock-qty span { font-size: 1.45rem; }
+
+/* 2. Nivel Extra Grande (+36%) */
+.view-estela[data-font-size="xlarge"] .estela-title { font-size: 2.05rem; }
+.view-estela[data-font-size="xlarge"] .estela-date { font-size: 1.25rem; }
+.view-estela[data-font-size="xlarge"] .estela-room-num { font-size: 2rem; }
+.view-estela[data-font-size="xlarge"] .estela-room-status { font-size: 1.38rem; }
+.view-estela[data-font-size="xlarge"] .estela-room-count { font-size: 1.45rem; }
+.view-estela[data-font-size="xlarge"] .estela-cleaning-note { font-size: 1.35rem; }
+.view-estela[data-font-size="xlarge"] .estela-turn-time { font-size: 1.4rem; }
+.view-estela[data-font-size="xlarge"] .estela-turn-items { font-size: 1.36rem; }
+.view-estela[data-font-size="xlarge"] .estela-empty-turns { font-size: 1.36rem; }
+.view-estela[data-font-size="xlarge"] .estela-pill-btn { font-size: 1.15rem; padding: 11px 22px; }
+.view-estela[data-font-size="xlarge"] .estela-date-input { font-size: 1.15rem; }
+.view-estela[data-font-size="xlarge"] .estela-historical-notice { font-size: 1.15rem; }
+.view-estela[data-font-size="xlarge"] .stock-name { font-size: 1.45rem; }
+.view-estela[data-font-size="xlarge"] .stock-sub { font-size: 1.2rem; }
+.view-estela[data-font-size="xlarge"] .stock-qty span { font-size: 1.65rem; }
+
+/* Pie con botón casi imperceptible para configurar tamaño de letra */
+.estela-footer-settings {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 36px 12px 24px;
+  margin-top: 24px;
+}
+
+.estela-font-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--ink-soft);
+  opacity: 0.35;
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.estela-font-toggle-btn:hover,
+.estela-font-toggle-btn:focus-visible,
+.estela-font-toggle-btn:active {
+  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.16);
+  transform: scale(1.02);
+}
+
+.estela-font-toggle-icon {
+  font-weight: 800;
+  font-size: 0.92rem;
+  letter-spacing: -0.05em;
+  opacity: 0.85;
+}
+
+.estela-font-toggle-label {
+  font-size: 0.8rem;
 }
 
 @keyframes fadeIn {

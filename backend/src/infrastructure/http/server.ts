@@ -55,6 +55,7 @@ export function createHttpServer(
 
       if (finalEstado === 'OCUPADA') {
         await roomRepo.updateStatus(roomId, 'OCUPADA', now, null);
+        await roomRepo.updateVehicle(roomId, 'AUTO');
       } else if (finalEstado === 'LIBRE') {
         // Cerrar turno si estaba ocupada
         if (room.isOccupied()) {
@@ -69,12 +70,14 @@ export function createHttpServer(
             horaFin: now,
             duracionMinutos: duracion,
             fecha: fechaBase,
-            tipo
+            tipo,
+            vehiculo: room.vehiculo || 'AUTO'
           });
 
           await productRepo.assignConsumptionsToShift(roomId, shift.id);
         }
         await roomRepo.updateStatus(roomId, 'LIBRE', null, null);
+        await roomRepo.updateVehicle(roomId, 'AUTO');
       }
 
       sse.broadcast({
@@ -84,11 +87,44 @@ export function createHttpServer(
           roomId,
           nuevoEstado: finalEstado,
           turnoInicio: finalEstado === 'OCUPADA' ? now.toISOString() : null,
-          limpiezaInicio: null
+          limpiezaInicio: null,
+          vehiculo: 'AUTO'
         }
       });
 
       res.json({ success: true, roomId, nuevoEstado });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Actualizar vehículo de la habitación ocupada (Auto, Moto, DiDi)
+  app.patch('/api/rooms/:id/vehicle', async (req, res) => {
+    try {
+      const roomId = parseInt(req.params.id, 10);
+      const { vehiculo } = req.body;
+      const normalized = String(vehiculo || '').toUpperCase();
+      if (!['AUTO', 'MOTO', 'DIDI'].includes(normalized)) {
+        return res.status(400).json({ error: 'Vehículo inválido. Opciones válidas: AUTO, MOTO, DIDI' });
+      }
+
+      const room = await roomRepo.findById(roomId);
+      if (!room) {
+        return res.status(404).json({ error: 'Habitación no encontrada' });
+      }
+
+      await roomRepo.updateVehicle(roomId, normalized);
+
+      sse.broadcast({
+        type: 'ROOM_VEHICLE_CHANGED',
+        timestamp: new Date().toISOString(),
+        data: {
+          roomId,
+          vehiculo: normalized
+        }
+      });
+
+      res.json({ success: true, roomId, vehiculo: normalized });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -215,6 +251,7 @@ export function createHttpServer(
         duracionMinutos: s.duracionMinutos,
         fecha: typeof s.fecha === 'string' ? s.fecha : dateParam,
         tipo: s.tipo,
+        vehiculo: s.vehiculo || 'AUTO',
         items: consumptionsMap.get(s.id) || []
       }));
 
@@ -247,6 +284,7 @@ export function createHttpServer(
         duracionMinutos: s.duracionMinutos,
         fecha: s.fecha,
         tipo: s.tipo,
+        vehiculo: s.vehiculo || 'AUTO',
         items: consumptionsMap.get(s.id) || []
       }));
 

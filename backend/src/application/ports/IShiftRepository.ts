@@ -7,6 +7,7 @@ export interface ShiftCreateData {
   duracionMinutos: number;
   fecha: string;
   tipo: ShiftType;
+  vehiculo?: string;
 }
 
 export interface IShiftRepository {

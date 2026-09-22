@@ -1,12 +1,15 @@
-import React from 'react';
-import { ProductDTO, RoomConsumptionDTO } from '../types';
+import React, { useState } from 'react';
+import { ProductDTO, RoomConsumptionDTO, VehicleType } from '../types';
+import { VehicleIcon } from './VehicleIcon';
 
 interface ConsumptionModalProps {
   roomId: number;
   products: ProductDTO[];
   consumption?: RoomConsumptionDTO;
+  currentVehicle?: VehicleType;
   onClose: () => void;
   onAddItem: (productId: number) => void;
+  onUpdateVehicle: (vehicle: VehicleType) => void;
 }
 
 function formatPrice(n: number): string {
@@ -17,11 +20,19 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
   roomId,
   products,
   consumption,
+  currentVehicle = 'AUTO',
   onClose,
   onAddItem,
+  onUpdateVehicle,
 }) => {
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>(currentVehicle);
   const currentItems = consumption?.items || [];
   const currentTotal = consumption?.total || 0;
+
+  const handleSelectVehicle = (vehicle: VehicleType) => {
+    setSelectedVehicle(vehicle);
+    onUpdateVehicle(vehicle);
+  };
 
   return (
     <div
@@ -41,6 +52,42 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
           >
             &times;
           </button>
+        </div>
+
+        {/* Selector de Vehículo de Ingreso (Auto, Moto, DiDi) - 3 Rectángulos sin emojis */}
+        <div className="vehicle-selector-box">
+          <div className="vehicle-selector-title">Vehículo de ingreso</div>
+          <div className="vehicle-cards-grid">
+            <button
+              type="button"
+              className={`vehicle-card ${selectedVehicle === 'AUTO' ? 'active' : ''}`}
+              onClick={() => handleSelectVehicle('AUTO')}
+              aria-label="Ingreso en Auto"
+            >
+              <VehicleIcon type="AUTO" size={26} />
+              <span className="vehicle-card-label">Auto</span>
+            </button>
+
+            <button
+              type="button"
+              className={`vehicle-card ${selectedVehicle === 'MOTO' ? 'active' : ''}`}
+              onClick={() => handleSelectVehicle('MOTO')}
+              aria-label="Ingreso en Moto"
+            >
+              <VehicleIcon type="MOTO" size={26} />
+              <span className="vehicle-card-label">Moto</span>
+            </button>
+
+            <button
+              type="button"
+              className={`vehicle-card ${selectedVehicle === 'DIDI' ? 'active' : ''}`}
+              onClick={() => handleSelectVehicle('DIDI')}
+              aria-label="Ingreso en DiDi"
+            >
+              <VehicleIcon type="DIDI" size={26} />
+              <span className="vehicle-card-label">DiDi</span>
+            </button>
+          </div>
         </div>
 
         <div className="modal-sub">
@@ -99,7 +146,7 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
           )}
 
           <div className="current-total">
-            <span>Total</span>
+            <span>Total Minibar</span>
             <span>{formatPrice(currentTotal)}</span>
           </div>
         </div>

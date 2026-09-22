@@ -56,10 +56,13 @@ export class TelegramBotService implements INotificationService {
           estadoTiempo = `⚠️ *Superó las 2 horas estándar (dentro de tolerancia).*`;
         }
 
+        const vehiculoTxt = payload.vehiculo ? `*VEHÍCULO:* ${payload.vehiculo}\n` : '';
+
         mensaje = `🟢 *${payload.roomName.toUpperCase()} — FIN DE TURNO*\n\n` +
                   `*ESTADO:* LIBRE\n` +
                   `*HORA:* ${hora} hs\n` +
                   `*DURACIÓN:* ${duracionTexto}\n` +
+                  vehiculoTxt +
                   `${estadoTiempo}\n` +
                   `_⚡ Llave bajada en administración._`;
       }

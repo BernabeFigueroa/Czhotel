@@ -34,6 +34,7 @@ export class HandleTuyaStatusReportUseCase {
       }
 
       await this.roomRepo.updateStatus(room.id, 'OCUPADA', eventDate, null);
+      await this.roomRepo.updateVehicle(room.id, 'AUTO');
 
       // Notificación inmediata
       await this.notifier.sendShiftAlert({
@@ -51,7 +52,8 @@ export class HandleTuyaStatusReportUseCase {
           nombre: room.nombre,
           nuevoEstado: 'OCUPADA',
           turnoInicio: eventDate.toISOString(),
-          limpiezaInicio: null
+          limpiezaInicio: null,
+          vehiculo: 'AUTO'
         }
       });
       return;
@@ -79,14 +81,16 @@ export class HandleTuyaStatusReportUseCase {
         horaFin: eventDate,
         duracionMinutos,
         fecha: fechaBase,
-        tipo
+        tipo,
+        vehiculo: room.vehiculo || 'AUTO'
       });
 
       // Vincular consumos de minibar a este turno
       await this.productRepo.assignConsumptionsToShift(room.id, shift.id);
 
-      // Pasar la habitación a estado LIBRE directamente (modelo binario)
+      // Pasar la habitación a estado LIBRE directamente (modelo binario) y resetear vehiculo
       await this.roomRepo.updateStatus(room.id, 'LIBRE', null, null);
+      await this.roomRepo.updateVehicle(room.id, 'AUTO');
 
       // Notificación inmediata Telegram
       await this.notifier.sendShiftAlert({
@@ -96,7 +100,8 @@ export class HandleTuyaStatusReportUseCase {
         durationMinutes: duracionMinutos,
         tipo,
         isOvertime,
-        turnosCount
+        turnosCount,
+        vehiculo: room.vehiculo || 'AUTO'
       });
 
       // Streaming PWA

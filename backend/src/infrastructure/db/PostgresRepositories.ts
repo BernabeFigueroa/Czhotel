@@ -17,7 +17,7 @@ export class PostgresRoomRepository implements IRoomRepository {
 
   async findById(id: number): Promise<Room | null> {
     const res = await this.pool.query(
-      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base, categoria FROM habitaciones WHERE id = $1`,
+      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base, categoria, COALESCE(vehiculo, 'AUTO') AS vehiculo FROM habitaciones WHERE id = $1`,
       [id]
     );
     if (res.rows.length === 0) return null;
@@ -26,7 +26,7 @@ export class PostgresRoomRepository implements IRoomRepository {
 
   async findByTuyaDeviceId(deviceId: string): Promise<Room | null> {
     const res = await this.pool.query(
-      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base, categoria FROM habitaciones WHERE tuya_device_id = $1`,
+      `SELECT id, nombre, tuya_device_id, estado_actual, turno_actual_inicio, limpieza_inicio, precio_base, categoria, COALESCE(vehiculo, 'AUTO') AS vehiculo FROM habitaciones WHERE tuya_device_id = $1`,
       [deviceId]
     );
     if (res.rows.length === 0) return null;
@@ -46,6 +46,7 @@ export class PostgresRoomRepository implements IRoomRepository {
         h.limpieza_inicio,
         COALESCE(h.precio_base, 35000)::numeric AS precio_base,
         COALESCE(h.categoria, '') AS categoria,
+        COALESCE(h.vehiculo, 'AUTO') AS vehiculo,
         COALESCE(COUNT(t.id), 0)::int AS turnos_hoy_count
       FROM habitaciones h
       LEFT JOIN turnos t ON t.habitacion_id = h.id AND t.fecha = $1::date AND t.tipo = 'TURNO'
@@ -62,7 +63,8 @@ export class PostgresRoomRepository implements IRoomRepository {
       r.limpieza_inicio ? new Date(r.limpieza_inicio) : null,
       Number(r.precio_base) || 35000,
       r.turnos_hoy_count,
-      r.categoria || this.getCategoryFallback(r.id)
+      r.categoria || this.getCategoryFallback(r.id),
+      r.vehiculo || 'AUTO'
     ));
   }
 
@@ -80,6 +82,15 @@ export class PostgresRoomRepository implements IRoomRepository {
     );
   }
 
+  async updateVehicle(id: number, vehiculo: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE habitaciones 
+       SET vehiculo = $1, updated_at = NOW() 
+       WHERE id = $2`,
+      [vehiculo, id]
+    );
+  }
+
   private mapToEntity(row: any): Room {
     return new Room(
       row.id,
@@ -90,7 +101,8 @@ export class PostgresRoomRepository implements IRoomRepository {
       row.limpieza_inicio ? new Date(row.limpieza_inicio) : null,
       Number(row.precio_base) || 35000,
       0,
-      row.categoria || this.getCategoryFallback(row.id)
+      row.categoria || this.getCategoryFallback(row.id),
+      row.vehiculo || 'AUTO'
     );
   }
 }
@@ -100,10 +112,10 @@ export class PostgresShiftRepository implements IShiftRepository {
 
   async createShift(data: ShiftCreateData): Promise<Shift> {
     const res = await this.pool.query(
-      `INSERT INTO turnos (habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo`,
-      [data.habitacionId, data.horaInicio, data.horaFin, data.duracionMinutos, data.fecha, data.tipo]
+      `INSERT INTO turnos (habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo, vehiculo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha, tipo, vehiculo`,
+      [data.habitacionId, data.horaInicio, data.horaFin, data.duracionMinutos, data.fecha, data.tipo, data.vehiculo || 'AUTO']
     );
     const row = res.rows[0];
     return new Shift(
@@ -113,13 +125,14 @@ export class PostgresShiftRepository implements IShiftRepository {
       new Date(row.hora_fin),
       row.duracion_minutos,
       row.fecha,
-      row.tipo
+      row.tipo,
+      row.vehiculo || 'AUTO'
     );
   }
 
   async findByDate(fecha: string): Promise<Shift[]> {
     const res = await this.pool.query(
-      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha::text, tipo 
+      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha::text, tipo, COALESCE(vehiculo, 'AUTO') AS vehiculo 
        FROM turnos 
        WHERE fecha = $1::date 
        ORDER BY hora_inicio ASC`,
@@ -132,13 +145,14 @@ export class PostgresShiftRepository implements IShiftRepository {
       new Date(r.hora_fin),
       r.duracion_minutos,
       r.fecha,
-      r.tipo || 'TURNO'
+      r.tipo || 'TURNO',
+      r.vehiculo || 'AUTO'
     ));
   }
 
   async findByRoomAndDate(habitacionId: number, fecha: string): Promise<Shift[]> {
     const res = await this.pool.query(
-      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha::text, tipo 
+      `SELECT id, habitacion_id, hora_inicio, hora_fin, duracion_minutos, fecha::text, tipo, COALESCE(vehiculo, 'AUTO') AS vehiculo 
        FROM turnos 
        WHERE habitacion_id = $1 AND fecha = $2::date 
        ORDER BY hora_inicio ASC`,
@@ -151,7 +165,8 @@ export class PostgresShiftRepository implements IShiftRepository {
       new Date(r.hora_fin),
       r.duracion_minutos,
       r.fecha,
-      r.tipo || 'TURNO'
+      r.tipo || 'TURNO',
+      r.vehiculo || 'AUTO'
     ));
   }
 }

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { RoomDTO, ShiftDTO, ProductDTO } from '../types';
+import React, { useState, useEffect } from 'react';
+import { RoomDTO, ShiftDTO, ProductDTO, RoomConsumptionDTO } from '../types';
 import { StockPanel } from './StockPanel';
+import { VehicleIcon } from './VehicleIcon';
 
 interface EstelaViewProps {
   rooms: RoomDTO[];
   shifts: ShiftDTO[];
   products: ProductDTO[];
+  consumptions?: Record<number, RoomConsumptionDTO>;
   selectedDate: string;
   todayDate: string;
   onSelectDate: (date: string) => void;
@@ -90,6 +92,10 @@ function calculateShiftTurns(shift: ShiftDTO): number {
   return 1 + Math.floor((shift.duracionMinutos - 160) / 120) + 1;
 }
 
+function formatPrice(n: number): string {
+  return '$' + Math.round(n).toLocaleString('es-AR');
+}
+
 function countTotalTurns(shiftsList: ShiftDTO[]): number {
   return shiftsList.reduce((acc, s) => acc + calculateShiftTurns(s), 0);
 }
@@ -98,6 +104,7 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
   rooms,
   shifts,
   products,
+  consumptions = {},
   selectedDate,
   todayDate,
   onSelectDate,
@@ -105,6 +112,52 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
   onAddProduct,
 }) => {
   const [activeTab, setActiveTab] = useState<'rooms' | 'stock'>('rooms');
+
+  // Tamaño de tipografía configurable (Normal, Grande, Muy grande) con persistencia
+  const [fontScale, setFontScale] = useState<'normal' | 'large' | 'xlarge'>(() => {
+    try {
+      const saved = localStorage.getItem('chezz_estela_font_scale');
+      if (saved === 'normal' || saved === 'large' || saved === 'xlarge') {
+        return saved;
+      }
+    } catch (e) {}
+    return 'normal';
+  });
+
+  const handleCycleFontScale = () => {
+    const nextScale: Record<'normal' | 'large' | 'xlarge', 'normal' | 'large' | 'xlarge'> = {
+      normal: 'large',
+      large: 'xlarge',
+      xlarge: 'normal'
+    };
+    const next = nextScale[fontScale];
+    setFontScale(next);
+    try {
+      localStorage.setItem('chezz_estela_font_scale', next);
+    } catch (e) {}
+  };
+
+  // Soporte de instalación PWA en Android / Samsung
+  const [canInstall, setCanInstall] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && !!(window as any).deferredInstallPrompt;
+  });
+
+  useEffect(() => {
+    const handleCanInstall = () => setCanInstall(true);
+    window.addEventListener('pwa-can-install', handleCanInstall);
+    return () => window.removeEventListener('pwa-can-install', handleCanInstall);
+  }, []);
+
+  const handleInstallClick = async () => {
+    const promptEvent = (window as any).deferredInstallPrompt;
+    if (!promptEvent) return;
+    promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+    if (outcome === 'accepted') {
+      (window as any).deferredInstallPrompt = null;
+      setCanInstall(false);
+    }
+  };
 
   const isToday = selectedDate === todayDate;
   const yesterdayDate = getYesterdayString(todayDate);
@@ -114,7 +167,25 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
   const totalShiftsCount = countTotalTurns(validShifts);
 
   return (
-    <section className="view view-estela">
+    <section className="view view-estela" data-font-size={fontScale}>
+      {canInstall && (
+        <div className="estela-install-banner">
+          <div className="estela-install-info">
+            <span className="estela-install-icon">📲</span>
+            <div>
+              <div className="estela-install-title">Instalar como aplicación</div>
+              <div className="estela-install-desc">Abre Chezz en pantalla completa sin barra de navegación</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="estela-install-btn"
+            onClick={handleInstallClick}
+          >
+            Instalar
+          </button>
+        </div>
+      )}
       <header className="estela-header">
         <div className="estela-header-main">
           <div>
@@ -257,16 +328,72 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
                   )}
                 </div>
 
-                {isToday && isOccupied && room.turnoActualInicio && (
-                  <div className="estela-cleaning-note">
-                    Turno en curso (iniciado hace {formatElapsedTime(room.turnoActualInicio)})
+                {isToday && isOccupied && (
+                  <div className="estela-active-billing-box">
+                    <div className="estela-billing-header">
+                      <div className="estela-vehicle-tag">
+                        <VehicleIcon type={room.vehiculo || 'AUTO'} size={18} />
+                        <span>Ingreso: {room.vehiculo === 'MOTO' ? 'Moto' : room.vehiculo === 'DIDI' ? 'DiDi' : 'Auto'}</span>
+                      </div>
+                      {room.turnoActualInicio && (
+                        <span className="estela-billing-time">
+                          Hace {formatElapsedTime(room.turnoActualInicio)}
+                        </span>
+                      )}
+                    </div>
+
+                    {(() => {
+                      const roomConsumption = consumptions?.[room.id];
+                      const activeItems = roomConsumption?.items || [];
+                      const activeConsumosTotal = roomConsumption?.total || 0;
+                      const minsElapsed = elapsedMinutes(room.turnoActualInicio);
+                      const turnosCount = minsElapsed < 160 ? 1 : (1 + Math.floor((minsElapsed - 160) / 120) + 1);
+                      const precioBaseTurno = (room.precioBase || 35000) * turnosCount;
+                      const totalCobroActual = precioBaseTurno + activeConsumosTotal;
+
+                      return (
+                        <>
+                          <div className="estela-billing-breakdown">
+                            <div className="estela-billing-row">
+                              <span>
+                                Habitación ({turnosCount === 1 ? '1 turno base' : `${turnosCount} turnos`})
+                              </span>
+                              <span className="estela-row-val">{formatPrice(precioBaseTurno)}</span>
+                            </div>
+
+                            <div className="estela-billing-row">
+                              <span>
+                                Consumos minibar ({activeItems.length === 0 ? '0' : activeItems.reduce((a, b) => a + b.cantidad, 0)} {activeItems.length === 1 ? 'producto' : 'productos'})
+                              </span>
+                              <span className="estela-row-val">{formatPrice(activeConsumosTotal)}</span>
+                            </div>
+
+                            {activeItems.length > 0 && (
+                              <div className="estela-active-items-list">
+                                {activeItems.map((it) => (
+                                  <span key={it.id || it.productoId} className="estela-active-item-chip">
+                                    {it.nombre} x{it.cantidad} ({formatPrice(it.precioUnitario * it.cantidad)})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="estela-total-charge-banner">
+                            <span className="estela-charge-label">TOTAL A COBRAR TURNO ACTUAL</span>
+                            <span className="estela-charge-amount">{formatPrice(totalCobroActual)}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
 
                 <div className="estela-turns">
+                  <div className="estela-turns-heading">Turnos anteriores de la fecha</div>
                   {roomShifts.length === 0 ? (
                     <div className="estela-empty-turns">
-                      {isToday ? 'Todavía no se usó hoy' : 'No se usó en esta fecha'}
+                      {isToday ? 'Todavía no hay turnos cerrados hoy' : 'No se usó en esta fecha'}
                     </div>
                   ) : (
                     roomShifts.map((turno) => {
@@ -275,22 +402,41 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
                       const turnosDelPase = calculateShiftTurns(turno);
                       const labelTurnos = turnosDelPase > 1 ? ` · ${turnosDelPase} turnos` : '';
                       const duracionStr = formatDurationMinutes(turno.duracionMinutos);
+                      const vehiculoTurno = turno.vehiculo || 'AUTO';
+                      const consumosTurnoTotal = (turno.items || []).reduce(
+                        (acc, it) => acc + (it.precioUnitario * it.cantidad),
+                        0
+                      );
+                      const precioBaseTurno = (room.precioBase || 35000) * (turnosDelPase || 1);
+                      const totalTurnoCobrado = precioBaseTurno + consumosTurnoTotal;
+
                       const itemsList =
                         turno.items && turno.items.length > 0
                           ? turno.items
                               .map(
                                 (it) =>
-                                  `${it.nombre}${it.cantidad > 1 ? ` x${it.cantidad}` : ''}`
+                                  `${it.nombre}${it.cantidad > 1 ? ` x${it.cantidad}` : ''} (${formatPrice(it.precioUnitario * it.cantidad)})`
                               )
                               .join(', ')
                           : 'Sin consumo';
 
                       return (
                         <div key={turno.id} className="estela-turn">
-                          <div className="estela-turn-time">
-                            Turno de {horaIni} a {horaFin} ({duracionStr}{labelTurnos})
+                          <div className="estela-turn-topline">
+                            <div className="estela-turn-time">
+                              {horaIni} a {horaFin} ({duracionStr}{labelTurnos})
+                            </div>
+                            <div className="estela-turn-vehicle-badge">
+                              <VehicleIcon type={vehiculoTurno} size={15} />
+                              <span>{vehiculoTurno === 'MOTO' ? 'Moto' : vehiculoTurno === 'DIDI' ? 'DiDi' : 'Auto'}</span>
+                            </div>
                           </div>
-                          <div className="estela-turn-items">{itemsList}</div>
+                          <div className="estela-turn-items">
+                            <span>Minibar: {itemsList}</span>
+                          </div>
+                          <div className="estela-turn-total-line">
+                            <span>Cobro registrado: <strong>{formatPrice(totalTurnoCobrado)}</strong></span>
+                          </div>
                         </div>
                       );
                     })
@@ -301,6 +447,24 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
           })}
         </div>
       )}
+
+      {/* Control discreto al pie para ajustar tamaño de letra */}
+      <footer className="estela-footer-settings">
+        <button
+          type="button"
+          onClick={handleCycleFontScale}
+          className="estela-font-toggle-btn"
+          title="Tocar para alternar el tamaño de la letra"
+          aria-label="Cambiar tamaño de texto"
+        >
+          <span className="estela-font-toggle-icon">Aa</span>
+          <span className="estela-font-toggle-label">
+            {fontScale === 'normal' && 'Tamaño: Normal'}
+            {fontScale === 'large' && 'Tamaño: Grande'}
+            {fontScale === 'xlarge' && 'Tamaño: Extra grande'}
+          </span>
+        </button>
+      </footer>
     </section>
   );
 };

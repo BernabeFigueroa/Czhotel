@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RoomDTO } from '../types';
+import { VehicleIcon } from './VehicleIcon';
 
 interface StaffViewProps {
   rooms: RoomDTO[];
@@ -107,6 +108,13 @@ export const StaffView: React.FC<StaffViewProps> = ({
                 </div>
 
                 {timeText && <div className="room-time">{timeText}</div>}
+
+                {isOccupied && (
+                  <div className="room-vehicle-chip">
+                    <VehicleIcon type={room.vehiculo || 'AUTO'} size={13} />
+                    <span>{room.vehiculo === 'MOTO' ? 'Moto' : room.vehiculo === 'DIDI' ? 'DiDi' : 'Auto'}</span>
+                  </div>
+                )}
 
                 {/* Botón + ÚNICAMENTE para habitaciones Ocupadas */}
                 {isOccupied && (
