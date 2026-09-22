@@ -1093,123 +1093,14 @@ button {
   font-weight: 600;
 }
 
-/* Caja de Cobro Activo en Vista Estela */
-.estela-active-billing-box {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-top: 12px;
-  backdrop-filter: blur(6px);
-}
-
-.estela-billing-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.estela-vehicle-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.22);
-  padding: 5px 12px;
-  border-radius: 8px;
-  font-size: 0.98rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.estela-billing-time {
-  font-size: 0.88rem;
-  opacity: 0.92;
-  font-weight: 600;
-}
-
-.estela-billing-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding-top: 10px;
-  font-size: 0.98rem;
-}
-
-.estela-billing-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.estela-row-val {
-  font-weight: 800;
-}
-
-.estela-active-items-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 4px 0;
-}
-
-.estela-active-item-chip {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
-
-.estela-total-charge-banner {
-  margin-top: 12px;
-  background: #FFFFFF;
-  color: #1A1A1A;
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
-}
-
-.estela-charge-label {
-  font-size: 0.84rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: #333333;
-}
-
-.estela-charge-amount {
-  font-size: 1.55rem;
-  font-weight: 900;
-  color: #B23A2E;
-  font-family: var(--font-display);
-  line-height: 1;
-}
-
 .estela-turns {
   margin-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.28);
   padding-top: 10px;
 }
 
-.estela-turns-heading {
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
-  opacity: 0.88;
-  margin-bottom: 8px;
-}
-
 .estela-turn {
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
@@ -1217,40 +1108,15 @@ button {
   border-bottom: none;
 }
 
-.estela-turn-topline {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.estela-turn-vehicle-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
 .estela-turn-time {
   font-weight: 700;
-  font-size: 1.06rem;
+  font-size: 1.08rem;
 }
 
 .estela-turn-items {
-  font-size: 0.96rem;
+  font-size: 1.05rem;
   opacity: 0.95;
-  margin-top: 4px;
-}
-
-.estela-turn-total-line {
-  font-size: 0.96rem;
-  margin-top: 4px;
-  opacity: 0.98;
+  margin-top: 3px;
 }
 
 .estela-empty-turns {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProductDTO, RoomConsumptionDTO, VehicleType } from '../types';
 import { VehicleIcon } from './VehicleIcon';
 
@@ -28,6 +28,10 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>(currentVehicle);
   const currentItems = consumption?.items || [];
   const currentTotal = consumption?.total || 0;
+
+  useEffect(() => {
+    setSelectedVehicle(currentVehicle);
+  }, [currentVehicle]);
 
   const handleSelectVehicle = (vehicle: VehicleType) => {
     setSelectedVehicle(vehicle);

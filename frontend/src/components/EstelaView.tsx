@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RoomDTO, ShiftDTO, ProductDTO, RoomConsumptionDTO } from '../types';
 import { StockPanel } from './StockPanel';
-import { VehicleIcon } from './VehicleIcon';
 
 interface EstelaViewProps {
   rooms: RoomDTO[];
@@ -328,72 +327,50 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
                   )}
                 </div>
 
-                {isToday && isOccupied && (
-                  <div className="estela-active-billing-box">
-                    <div className="estela-billing-header">
-                      <div className="estela-vehicle-tag">
-                        <VehicleIcon type={room.vehiculo || 'AUTO'} size={18} />
-                        <span>Ingreso: {room.vehiculo === 'MOTO' ? 'Moto' : room.vehiculo === 'DIDI' ? 'DiDi' : 'Auto'}</span>
+                {isToday && isOccupied && room.turnoActualInicio && (() => {
+                  const roomConsumption = consumptions?.[room.id];
+                  const activeItems = roomConsumption?.items || [];
+                  const activeConsumosTotal = roomConsumption?.total || 0;
+                  const minsElapsed = elapsedMinutes(room.turnoActualInicio);
+                  const turnosCount = minsElapsed < 160 ? 1 : (1 + Math.floor((minsElapsed - 160) / 120) + 1);
+                  const precioBaseTurno = (room.precioBase || 35000) * turnosCount;
+                  const totalCobroActual = precioBaseTurno + activeConsumosTotal;
+                  const vehiculo = (room.vehiculo || 'AUTO').toUpperCase();
+                  const showVehicle = vehiculo === 'MOTO' || vehiculo === 'DIDI';
+
+                  return (
+                    <div className="estela-cleaning-note">
+                      <div>
+                        Turno en curso (iniciado hace {formatElapsedTime(room.turnoActualInicio)})
+                        {showVehicle && (
+                          <span style={{
+                            marginLeft: '8px',
+                            background: 'rgba(255, 255, 255, 0.28)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 800,
+                            fontSize: '0.92rem'
+                          }}>
+                            {vehiculo === 'MOTO' ? 'Moto' : 'DiDi'}
+                          </span>
+                        )}
                       </div>
-                      {room.turnoActualInicio && (
-                        <span className="estela-billing-time">
-                          Hace {formatElapsedTime(room.turnoActualInicio)}
-                        </span>
-                      )}
+                      <div style={{ marginTop: '6px', fontSize: '1.15rem', fontWeight: 800 }}>
+                        Total a cobrar: {formatPrice(totalCobroActual)}
+                        {activeItems.length > 0 && (
+                          <span style={{ fontWeight: 600, fontSize: '0.95rem', opacity: 0.92, marginLeft: '6px' }}>
+                            ({activeItems.map((it) => `${it.nombre} x${it.cantidad}`).join(', ')})
+                          </span>
+                        )}
+                      </div>
                     </div>
-
-                    {(() => {
-                      const roomConsumption = consumptions?.[room.id];
-                      const activeItems = roomConsumption?.items || [];
-                      const activeConsumosTotal = roomConsumption?.total || 0;
-                      const minsElapsed = elapsedMinutes(room.turnoActualInicio);
-                      const turnosCount = minsElapsed < 160 ? 1 : (1 + Math.floor((minsElapsed - 160) / 120) + 1);
-                      const precioBaseTurno = (room.precioBase || 35000) * turnosCount;
-                      const totalCobroActual = precioBaseTurno + activeConsumosTotal;
-
-                      return (
-                        <>
-                          <div className="estela-billing-breakdown">
-                            <div className="estela-billing-row">
-                              <span>
-                                Habitación ({turnosCount === 1 ? '1 turno base' : `${turnosCount} turnos`})
-                              </span>
-                              <span className="estela-row-val">{formatPrice(precioBaseTurno)}</span>
-                            </div>
-
-                            <div className="estela-billing-row">
-                              <span>
-                                Consumos minibar ({activeItems.length === 0 ? '0' : activeItems.reduce((a, b) => a + b.cantidad, 0)} {activeItems.length === 1 ? 'producto' : 'productos'})
-                              </span>
-                              <span className="estela-row-val">{formatPrice(activeConsumosTotal)}</span>
-                            </div>
-
-                            {activeItems.length > 0 && (
-                              <div className="estela-active-items-list">
-                                {activeItems.map((it) => (
-                                  <span key={it.id || it.productoId} className="estela-active-item-chip">
-                                    {it.nombre} x{it.cantidad} ({formatPrice(it.precioUnitario * it.cantidad)})
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="estela-total-charge-banner">
-                            <span className="estela-charge-label">TOTAL A COBRAR TURNO ACTUAL</span>
-                            <span className="estela-charge-amount">{formatPrice(totalCobroActual)}</span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="estela-turns">
-                  <div className="estela-turns-heading">Turnos anteriores de la fecha</div>
                   {roomShifts.length === 0 ? (
                     <div className="estela-empty-turns">
-                      {isToday ? 'Todavía no hay turnos cerrados hoy' : 'No se usó en esta fecha'}
+                      {isToday ? 'Todavía no se usó hoy' : 'No se usó en esta fecha'}
                     </div>
                   ) : (
                     roomShifts.map((turno) => {
@@ -402,41 +379,37 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
                       const turnosDelPase = calculateShiftTurns(turno);
                       const labelTurnos = turnosDelPase > 1 ? ` · ${turnosDelPase} turnos` : '';
                       const duracionStr = formatDurationMinutes(turno.duracionMinutos);
-                      const vehiculoTurno = turno.vehiculo || 'AUTO';
-                      const consumosTurnoTotal = (turno.items || []).reduce(
-                        (acc, it) => acc + (it.precioUnitario * it.cantidad),
-                        0
-                      );
-                      const precioBaseTurno = (room.precioBase || 35000) * (turnosDelPase || 1);
-                      const totalTurnoCobrado = precioBaseTurno + consumosTurnoTotal;
-
                       const itemsList =
                         turno.items && turno.items.length > 0
                           ? turno.items
                               .map(
                                 (it) =>
-                                  `${it.nombre}${it.cantidad > 1 ? ` x${it.cantidad}` : ''} (${formatPrice(it.precioUnitario * it.cantidad)})`
+                                  `${it.nombre}${it.cantidad > 1 ? ` x${it.cantidad}` : ''}`
                               )
                               .join(', ')
                           : 'Sin consumo';
 
+                      const vehiculoTurno = (turno.vehiculo || 'AUTO').toUpperCase();
+                      const showVehiculoTurno = vehiculoTurno === 'MOTO' || vehiculoTurno === 'DIDI';
+
                       return (
                         <div key={turno.id} className="estela-turn">
-                          <div className="estela-turn-topline">
-                            <div className="estela-turn-time">
-                              {horaIni} a {horaFin} ({duracionStr}{labelTurnos})
-                            </div>
-                            <div className="estela-turn-vehicle-badge">
-                              <VehicleIcon type={vehiculoTurno} size={15} />
-                              <span>{vehiculoTurno === 'MOTO' ? 'Moto' : vehiculoTurno === 'DIDI' ? 'DiDi' : 'Auto'}</span>
-                            </div>
+                          <div className="estela-turn-time">
+                            Turno de {horaIni} a {horaFin} ({duracionStr}{labelTurnos})
+                            {showVehiculoTurno && (
+                              <span style={{
+                                marginLeft: '8px',
+                                background: 'rgba(255, 255, 255, 0.25)',
+                                padding: '2px 7px',
+                                borderRadius: '5px',
+                                fontWeight: 700,
+                                fontSize: '0.88rem'
+                              }}>
+                                {vehiculoTurno === 'MOTO' ? 'Moto' : 'DiDi'}
+                              </span>
+                            )}
                           </div>
-                          <div className="estela-turn-items">
-                            <span>Minibar: {itemsList}</span>
-                          </div>
-                          <div className="estela-turn-total-line">
-                            <span>Cobro registrado: <strong>{formatPrice(totalTurnoCobrado)}</strong></span>
-                          </div>
+                          <div className="estela-turn-items">{itemsList}</div>
                         </div>
                       );
                     })

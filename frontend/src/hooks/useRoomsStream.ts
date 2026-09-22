@@ -38,6 +38,31 @@ function getTodayArgentina(): string {
   }).format(new Date());
 }
 
+function getStoredVehicles(): Record<number, 'AUTO' | 'MOTO' | 'DIDI'> {
+  try {
+    const raw = localStorage.getItem('chezz_active_vehicles');
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setStoredVehicle(roomId: number, vehiculo: 'AUTO' | 'MOTO' | 'DIDI') {
+  try {
+    const current = getStoredVehicles();
+    current[roomId] = vehiculo;
+    localStorage.setItem('chezz_active_vehicles', JSON.stringify(current));
+  } catch {}
+}
+
+function clearStoredVehicle(roomId: number) {
+  try {
+    const current = getStoredVehicles();
+    delete current[roomId];
+    localStorage.setItem('chezz_active_vehicles', JSON.stringify(current));
+  } catch {}
+}
+
 export function useRoomsStream() {
   const [rooms, setRooms] = useState<RoomDTO[]>(INITIAL_ROOMS);
   const [products, setProducts] = useState<ProductDTO[]>(INITIAL_PRODUCTS);
@@ -56,7 +81,27 @@ export function useRoomsStream() {
       if (res.ok) {
         const data: RoomDTO[] = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          setRooms(data);
+          const stored = getStoredVehicles();
+          setRooms(data.map((r) => {
+            const isOccupied = (r.estadoActual || '').toUpperCase() === 'OCUPADA';
+            if (!isOccupied) {
+              if (stored[r.id]) clearStoredVehicle(r.id);
+              return { ...r, vehiculo: 'AUTO' };
+            }
+
+            const serverVeh = (r.vehiculo || '').toUpperCase();
+            if (serverVeh === 'MOTO' || serverVeh === 'DIDI') {
+              setStoredVehicle(r.id, serverVeh as any);
+              return { ...r, vehiculo: serverVeh as any };
+            }
+
+            const localVeh = stored[r.id];
+            if (localVeh === 'MOTO' || localVeh === 'DIDI') {
+              return { ...r, vehiculo: localVeh };
+            }
+
+            return { ...r, vehiculo: 'AUTO' };
+          }));
         }
       }
     } catch (err: any) {
@@ -196,7 +241,8 @@ export function useRoomsStream() {
   // Actualizar vehículo de la habitación
   const updateRoomVehicle = async (roomId: number, vehiculo: 'AUTO' | 'MOTO' | 'DIDI') => {
     try {
-      // Actualización optimista
+      setStoredVehicle(roomId, vehiculo);
+      // Actualización optimista local
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, vehiculo } : r))
       );
@@ -278,6 +324,7 @@ export function useRoomsStream() {
               })
             );
             if (nuevoEstado === 'LIMPIANDO' || nuevoEstado === 'LIBRE') {
+              clearStoredVehicle(roomId);
               setConsumptions((prev) => {
                 const next = { ...prev };
                 delete next[roomId];
@@ -287,6 +334,7 @@ export function useRoomsStream() {
             }
           } else if (payload.type === 'ROOM_VEHICLE_CHANGED') {
             const { roomId, vehiculo } = payload.data;
+            setStoredVehicle(roomId, vehiculo);
             setRooms((prev) =>
               prev.map((r) => (r.id === roomId ? { ...r, vehiculo } : r))
             );
