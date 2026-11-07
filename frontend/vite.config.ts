@@ -7,8 +7,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:10000',
-        changeOrigin: true
+        target: process.env.VITE_BACKEND_URL || 'https://czhotel.onrender.com',
+        changeOrigin: true,
+        secure: true
       }
     }
   }
