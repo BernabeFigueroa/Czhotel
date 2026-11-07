@@ -20,7 +20,6 @@ interface TurnoDef {
   key: TurnoType;
   nombre: string;
   horario: string;
-  icono: string;
   descripcion: string;
 }
 
@@ -28,23 +27,20 @@ const TURNOS: TurnoDef[] = [
   {
     key: 'MANANA',
     nombre: 'Turno Mañana',
-    horario: '7:00 AM a 2:30 PM (07:00 a 14:30)',
-    icono: '🌅',
-    descripcion: 'Inicia 07:00 hs · Termina 14:30 hs'
+    horario: '07:00 a 14:30 hs',
+    descripcion: 'Horario: 07:00 a 14:30 hs'
   },
   {
     key: 'TARDE',
     nombre: 'Turno Tarde',
-    horario: '2:30 PM a 10:00 PM (14:30 a 22:00)',
-    icono: '☀️',
-    descripcion: 'Inicia 14:30 hs · Termina 22:00 hs'
+    horario: '14:30 a 22:00 hs',
+    descripcion: 'Horario: 14:30 a 22:00 hs'
   },
   {
     key: 'NOCHE',
     nombre: 'Turno Noche',
-    horario: '10:00 PM a 7:00 AM (22:00 a 07:00)',
-    icono: '🌙',
-    descripcion: 'Inicia 22:00 hs · Termina 07:00 hs'
+    horario: '22:00 a 07:00 hs',
+    descripcion: 'Horario: 22:00 a 07:00 hs'
   }
 ];
 
@@ -78,37 +74,79 @@ function formatHourMin(isoString: string | null): string {
   }
 }
 
-function getArgentinaMinutes(isoString: string | null): number {
-  if (!isoString) return 0;
+interface ArgentinaDateTime {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  calendarDateStr: string; // "YYYY-MM-DD"
+  totalMinutes: number;    // hour * 60 + minute
+}
+
+function getArgentinaDateTime(isoString: string | null): ArgentinaDateTime | null {
+  if (!isoString) return null;
   try {
     const d = new Date(isoString);
-    const formatter = new Intl.DateTimeFormat('es-AR', {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Argentina/Buenos_Aires',
-      hour: 'numeric',
-      minute: 'numeric',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: false,
     });
     const parts = formatter.formatToParts(d);
+    const year = parseInt(parts.find((p) => p.type === 'year')?.value || '0', 10);
+    const month = parseInt(parts.find((p) => p.type === 'month')?.value || '0', 10);
+    const day = parseInt(parts.find((p) => p.type === 'day')?.value || '0', 10);
     const hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
-    const min = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
-    return hour * 60 + min;
+    const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const calendarDateStr = `${year}-${pad(month)}-${pad(day)}`;
+    const totalMinutes = hour * 60 + minute;
+
+    return { year, month, day, hour, minute, calendarDateStr, totalMinutes };
   } catch {
-    return 0;
+    return null;
   }
 }
 
-function getTurnoType(isoString: string | null): TurnoType {
-  const mins = getArgentinaMinutes(isoString);
-  // Mañana: 7:00 a 14:30 (420 a 870 min)
-  if (mins >= 420 && mins < 870) {
-    return 'MANANA';
+/**
+ * Clasifica cualquier turno en su turno correspondiente (MANANA, TARDE, NOCHE)
+ * y en su FECHA OPERATIVA del hotel (YYYY-MM-DD).
+ * 
+ * Regla de turnos del motel:
+ * - Turno Mañana: 07:00 a 14:30 (420 a 870 min) -> Fecha = mismo día calendario.
+ * - Turno Tarde:  14:30 a 22:00 (870 a 1320 min) -> Fecha = mismo día calendario.
+ * - Turno Noche:  22:00 a 23:59 (>= 1320 min) -> Fecha = mismo día calendario (la noche que inicia hoy a las 22:00).
+ * - Turno Noche (madrugada): 00:00 a 06:59 (< 420 min) -> Fecha = día anterior (la noche que arrancó ayer a las 22:00 y continuó hasta las 07:00).
+ */
+function getTurnoYFechaOperativa(isoString: string | null): { turno: TurnoType; fechaOperativa: string } {
+  const dt = getArgentinaDateTime(isoString);
+  if (!dt) return { turno: 'MANANA', fechaOperativa: '' };
+
+  const { totalMinutes, calendarDateStr, year, month, day } = dt;
+
+  if (totalMinutes >= 420 && totalMinutes < 870) {
+    // 07:00 a 14:29
+    return { turno: 'MANANA', fechaOperativa: calendarDateStr };
+  } else if (totalMinutes >= 870 && totalMinutes < 1320) {
+    // 14:30 a 21:59
+    return { turno: 'TARDE', fechaOperativa: calendarDateStr };
+  } else if (totalMinutes >= 1320) {
+    // 22:00 a 23:59
+    return { turno: 'NOCHE', fechaOperativa: calendarDateStr };
+  } else {
+    // 00:00 a 06:59 (madrugada de la noche anterior)
+    const prevDate = new Date(year, month - 1, day);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const fechaAnterior = `${prevDate.getFullYear()}-${pad(prevDate.getMonth() + 1)}-${pad(prevDate.getDate())}`;
+    return { turno: 'NOCHE', fechaOperativa: fechaAnterior };
   }
-  // Tarde: 14:30 a 22:00 (870 a 1320 min)
-  if (mins >= 870 && mins < 1320) {
-    return 'TARDE';
-  }
-  // Noche: 22:00 a 07:00 (1320 a 1440 min o 0 a 420 min)
-  return 'NOCHE';
 }
 
 function calculateShiftTurns(duracionMinutos: number): number {
@@ -162,7 +200,21 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
   onSwitchToMainView,
   onOpenConsumption,
 }) => {
-  const [fontSize, setFontSize] = useState<'normal' | 'grande'>('grande');
+  // Persistir la preferencia de tamaño de letra de la señora en localStorage
+  const [fontSize, setFontSize] = useState<'normal' | 'grande'>(() => {
+    try {
+      const saved = localStorage.getItem('chezz_planilla_font_size');
+      if (saved === 'normal' || saved === 'grande') return saved;
+    } catch {}
+    return 'grande';
+  });
+
+  const handleSetFontSize = (val: 'normal' | 'grande') => {
+    setFontSize(val);
+    try {
+      localStorage.setItem('chezz_planilla_font_size', val);
+    } catch {}
+  };
 
   const isToday = selectedDate === todayDate;
   const yesterdayDate = getYesterdayString(todayDate);
@@ -170,16 +222,23 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
 
   // Turno actual según la hora en vivo
   const currentTurnoKey = useMemo<TurnoType>(() => {
-    return getTurnoType(new Date().toISOString());
+    return getTurnoYFechaOperativa(new Date().toISOString()).turno;
   }, []);
 
-  // Construir las filas combinando turnos finalizados + habitaciones en curso (si es hoy)
+  // Construir las filas asegurando que correspondan estrictamente a la fecha operativa seleccionada
   const rows = useMemo<PlanillaRowData[]>(() => {
     const list: PlanillaRowData[] = [];
 
-    // 1. Turnos cerrados de la base de datos para esta fecha
+    // 1. Turnos cerrados de la base de datos
     const validShifts = shifts.filter((s) => s.tipo === 'TURNO');
     for (const s of validShifts) {
+      const { turno, fechaOperativa } = getTurnoYFechaOperativa(s.horaInicio);
+
+      // FILTRO EXACTO: Solo incluir el turno si su fecha operativa coincide con la fecha seleccionada
+      if (fechaOperativa !== selectedDate) {
+        continue;
+      }
+
       const room = rooms.find((r) => r.id === s.habitacionId);
       const meta = getCategoryAndPrice(s.habitacionId);
       const categoria = room?.categoria || meta.categoria;
@@ -216,7 +275,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
         turnosCount,
         precioBase,
         totalACobrar,
-        turnoKey: getTurnoType(s.horaInicio),
+        turnoKey: turno,
         rawTimeForSort: new Date(s.horaInicio).getTime(),
       });
     }
@@ -225,6 +284,11 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
     if (isToday) {
       const occupiedRooms = rooms.filter((r) => r.estadoActual === 'OCUPADA' && r.turnoActualInicio);
       for (const r of occupiedRooms) {
+        const { turno, fechaOperativa } = getTurnoYFechaOperativa(r.turnoActualInicio);
+        if (fechaOperativa !== selectedDate) {
+          continue;
+        }
+
         const meta = getCategoryAndPrice(r.id);
         const categoria = r.categoria || meta.categoria;
         const precioBase = r.precioBase || meta.precioBase;
@@ -261,7 +325,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
           turnosCount,
           precioBase,
           totalACobrar,
-          turnoKey: getTurnoType(r.turnoActualInicio),
+          turnoKey: turno,
           rawTimeForSort: startMs,
         });
       }
@@ -269,7 +333,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
 
     // Ordenar cronológicamente por hora de entrada
     return list.sort((a, b) => a.rawTimeForSort - b.rawTimeForSort);
-  }, [shifts, rooms, consumptions, isToday]);
+  }, [shifts, rooms, consumptions, selectedDate, isToday]);
 
   // Agrupar filas por Turno
   const turnosConFilas = useMemo(() => {
@@ -294,49 +358,56 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
 
   const totalMovimientosDia = rows.length;
 
+  const isGrande = fontSize === 'grande';
+
   return (
-    <div className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${fontSize === 'grande' ? 'text-lg' : 'text-base'}`}>
+    <div className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${isGrande ? 'text-xl' : 'text-base'}`}>
       
       {/* Barra superior con controles y botón volver */}
-      <header className="sticky top-0 z-30 bg-[#2B2822] text-[#F1ECE0] border-b-4 border-[#C9A227] px-4 py-3 shadow-md">
+      <header className="sticky top-0 z-30 bg-[#2B2822] text-[#F1ECE0] border-b-4 border-[#C9A227] px-4 py-3.5 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onSwitchToMainView}
-              className="px-4 py-2 bg-[#C9A227] hover:bg-[#d8af2c] text-[#221E10] font-black rounded-lg flex items-center gap-2 shadow active:scale-95 transition-all text-base md:text-lg"
+              className="px-4 py-2.5 bg-[#C9A227] hover:bg-[#d8af2c] active:bg-[#b58f1f] text-[#221E10] font-black rounded-xl flex items-center gap-2 shadow active:scale-95 transition-all text-base md:text-xl border-2 border-[#221E10]/20"
               title="Volver a la vista de cuadrícula de habitaciones"
             >
               ⬅️ Volver a Habitaciones
             </button>
             <div>
-              <h1 className="font-bold text-xl md:text-2xl text-white tracking-wide flex items-center gap-2">
-                📋 Planilla en Papel por Turnos
+              <h1 className="font-black text-xl md:text-3xl text-white tracking-wide">
+                Planilla en Papel por Turnos
               </h1>
-              <p className="text-xs md:text-sm text-[#B8B2A0]">
-                Mañana (7:00 a 14:30) · Tarde (14:30 a 22:00) · Noche (22:00 a 7:00)
-              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Control de tamaño de letra para señora grande */}
-            <div className="bg-[#211F1A] border border-[#4A4638] rounded-lg p-1 flex items-center gap-1">
-              <span className="text-xs text-[#B8B2A0] px-2 font-semibold">Letra:</span>
+          <div className="flex items-center gap-2">
+            {/* Control de tamaño de letra agrandado */}
+            <div className="bg-[#211F1A] border-2 border-[#4A4638] rounded-xl p-1.5 flex items-center gap-1.5">
+              <span className="text-xs md:text-sm text-[#B8B2A0] px-2 font-bold">Letra:</span>
               <button
                 type="button"
-                onClick={() => setFontSize('normal')}
-                className={`px-2.5 py-1 text-xs font-bold rounded ${fontSize === 'normal' ? 'bg-[#C9A227] text-[#221E10]' : 'text-stone-300 hover:bg-[#33302A]'}`}
+                onClick={() => handleSetFontSize('normal')}
+                className={`px-3 py-1.5 text-xs md:text-sm font-bold rounded-lg transition-colors ${
+                  fontSize === 'normal'
+                    ? 'bg-[#C9A227] text-[#221E10] font-black shadow'
+                    : 'text-stone-300 hover:bg-[#33302A]'
+                }`}
               >
                 A Normal
               </button>
               <button
                 type="button"
-                onClick={() => setFontSize('grande')}
-                className={`px-2.5 py-1 text-xs font-bold rounded ${fontSize === 'grande' ? 'bg-[#C9A227] text-[#221E10]' : 'text-stone-300 hover:bg-[#33302A]'}`}
+                onClick={() => handleSetFontSize('grande')}
+                className={`px-3.5 py-1.5 text-sm md:text-base font-black rounded-lg transition-colors ${
+                  fontSize === 'grande'
+                    ? 'bg-[#C9A227] text-[#221E10] shadow'
+                    : 'text-stone-300 hover:bg-[#33302A]'
+                }`}
               >
-                A+ Grande
+                A+ Muy Grande
               </button>
             </div>
           </div>
@@ -347,24 +418,30 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
       <div className="max-w-7xl mx-auto px-3 md:px-6 pt-5">
         <div className="bg-white border-2 border-[#DDD5BE] rounded-xl p-4 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
           
-          {/* Selector de fechas rápido */}
+          {/* Selector de fechas rápido (sin emojis) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-stone-700 text-sm md:text-base mr-1">Fecha de la planilla:</span>
+            <span className={`font-bold text-stone-700 mr-1 ${isGrande ? 'text-lg md:text-xl' : 'text-sm md:text-base'}`}>
+              Fecha de la planilla:
+            </span>
             <button
               type="button"
               onClick={() => onSelectDate(todayDate)}
-              className={`px-4 py-2 font-bold rounded-lg border text-sm md:text-base transition-all ${
+              className={`px-4 py-2 font-black rounded-lg border transition-all ${
+                isGrande ? 'text-base md:text-lg' : 'text-sm md:text-base'
+              } ${
                 isToday
                   ? 'bg-[#2E7D32] text-white border-[#2E7D32] shadow'
                   : 'bg-stone-50 text-stone-700 border-stone-300 hover:bg-stone-100'
               }`}
             >
-              📅 Hoy
+              Hoy
             </button>
             <button
               type="button"
               onClick={() => onSelectDate(yesterdayDate)}
-              className={`px-4 py-2 font-bold rounded-lg border text-sm md:text-base transition-all ${
+              className={`px-4 py-2 font-black rounded-lg border transition-all ${
+                isGrande ? 'text-base md:text-lg' : 'text-sm md:text-base'
+              } ${
                 isYesterday
                   ? 'bg-[#2E7D32] text-white border-[#2E7D32] shadow'
                   : 'bg-stone-50 text-stone-700 border-stone-300 hover:bg-stone-100'
@@ -376,25 +453,27 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
               type="date"
               value={selectedDate}
               onChange={(e) => e.target.value && onSelectDate(e.target.value)}
-              className="px-3 py-2 border-2 border-stone-300 rounded-lg text-sm md:text-base font-bold text-stone-800 bg-white"
+              className={`px-3 py-2 border-2 border-stone-300 rounded-lg font-bold text-stone-800 bg-white ${
+                isGrande ? 'text-base md:text-lg' : 'text-sm md:text-base'
+              }`}
             />
           </div>
 
           {/* Gran Total del Día */}
-          <div className="bg-[#FAF6EC] border-2 border-[#C9A227] rounded-xl px-5 py-2.5 flex items-center gap-4 shadow-sm">
+          <div className="bg-[#FAF6EC] border-2 border-[#C9A227] rounded-xl px-5 py-3 flex items-center gap-5 shadow-sm">
             <div>
-              <span className="block text-xs uppercase tracking-wider font-extrabold text-[#6B6552]">
+              <span className={`block uppercase tracking-wider font-extrabold text-[#6B6552] ${isGrande ? 'text-xs md:text-sm' : 'text-xs'}`}>
                 Total General Facturado
               </span>
-              <span className="text-2xl md:text-3xl font-black text-[#1E3A22]">
+              <span className={`font-black text-[#1E3A22] ${isGrande ? 'text-3xl md:text-4xl' : 'text-2xl md:text-3xl'}`}>
                 {formatPrice(totalGeneralDia)}
               </span>
             </div>
-            <div className="border-l-2 border-[#DDD5BE] pl-4">
-              <span className="block text-xs uppercase tracking-wider font-extrabold text-[#6B6552]">
+            <div className="border-l-2 border-[#DDD5BE] pl-5">
+              <span className={`block uppercase tracking-wider font-extrabold text-[#6B6552] ${isGrande ? 'text-xs md:text-sm' : 'text-xs'}`}>
                 Movimientos
               </span>
-              <span className="text-xl md:text-2xl font-black text-[#26241C]">
+              <span className={`font-black text-[#26241C] ${isGrande ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
                 {totalMovimientosDia}
               </span>
             </div>
@@ -412,51 +491,53 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                 turno.esTurnoActual ? 'border-[#C9A227] ring-4 ring-[#C9A227]/20' : 'border-[#DDD5BE]'
               }`}
             >
-              {/* Encabezado del Turno */}
+              {/* Encabezado del Turno (Sin emojis, subtotales en AZUL) */}
               <div
-                className={`px-5 py-3.5 border-b-2 flex flex-wrap items-center justify-between gap-3 ${
+                className={`px-5 py-4 border-b-2 flex flex-wrap items-center justify-between gap-3 ${
                   turno.esTurnoActual
                     ? 'bg-[#2B2822] text-[#F1ECE0] border-[#C9A227]'
                     : 'bg-[#F3EEDF] text-[#22201A] border-[#DDD5BE]'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl md:text-3xl">{turno.icono}</span>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="font-black text-xl md:text-2xl tracking-tight">
-                        {turno.nombre}
-                      </h2>
-                      <span className="text-sm font-semibold opacity-80">
-                        ({turno.horario})
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className={`font-black tracking-tight ${isGrande ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
+                      {turno.nombre}
+                    </h2>
+                    <span className={`font-bold opacity-80 ${isGrande ? 'text-base md:text-lg' : 'text-sm'}`}>
+                      ({turno.horario})
+                    </span>
+                    {turno.esTurnoActual && (
+                      <span className="bg-[#2E7D32] text-white text-xs md:text-sm font-black px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                        Turno Actual (En vivo)
                       </span>
-                      {turno.esTurnoActual && (
-                        <span className="bg-[#2E7D32] text-white text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
-                          🟢 Turno Actual (En vivo)
-                        </span>
-                      )}
-                    </div>
-                    <p className={`text-xs md:text-sm font-medium ${turno.esTurnoActual ? 'text-stone-300' : 'text-stone-600'}`}>
-                      {turno.descripcion}
-                    </p>
+                    )}
                   </div>
+                  <p className={`font-medium mt-0.5 ${isGrande ? 'text-sm md:text-base' : 'text-xs md:text-sm'} ${
+                    turno.esTurnoActual ? 'text-stone-300' : 'text-stone-600'
+                  }`}>
+                    {turno.descripcion}
+                  </p>
                 </div>
 
-                {/* Subtotal del Turno */}
-                <div className="flex items-center gap-4 text-right">
+                {/* Subtotal del Turno en AZUL */}
+                <div className="flex items-center gap-5 text-right">
                   <div>
-                    <span className="block text-xs uppercase tracking-wider font-extrabold opacity-75">
+                    <span className={`block uppercase tracking-wider font-extrabold opacity-75 ${isGrande ? 'text-xs md:text-sm' : 'text-xs'}`}>
                       Turnos registrados
                     </span>
-                    <span className="text-lg md:text-xl font-black">
+                    <span className={`font-black ${isGrande ? 'text-xl md:text-2xl' : 'text-lg md:text-xl'}`}>
                       {turno.countTurnos} {turno.countTurnos === 1 ? 'habitación' : 'habitaciones'}
                     </span>
                   </div>
-                  <div className="border-l-2 border-current/20 pl-4">
-                    <span className="block text-xs uppercase tracking-wider font-extrabold opacity-75">
+                  <div className="border-l-2 border-current/20 pl-5">
+                    <span className={`block uppercase tracking-wider font-extrabold opacity-75 ${isGrande ? 'text-xs md:text-sm' : 'text-xs'}`}>
                       Subtotal Turno
                     </span>
-                    <span className="text-xl md:text-2xl font-black text-[#8FE08C] drop-shadow-sm">
+                    {/* SUBTOTOTAL EN AZUL CLARO EN FONDO OSCURO, AZUL PROFUNDO EN FONDO CLARO */}
+                    <span className={`font-black drop-shadow-sm ${isGrande ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} ${
+                      turno.esTurnoActual ? 'text-[#60A5FA]' : 'text-[#1D4ED8]'
+                    }`}>
                       {formatPrice(turno.totalTurno)}
                     </span>
                   </div>
@@ -465,9 +546,9 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
 
               {/* Contenido / Tabla tipo planilla en papel */}
               {turno.filas.length === 0 ? (
-                <div className="p-8 text-center bg-[#FAF9F5] text-stone-500 font-medium">
-                  <p className="text-lg">No hay habitaciones registradas en este turno aún.</p>
-                  <p className="text-xs text-stone-400 mt-1">
+                <div className={`p-8 text-center bg-[#FAF9F5] text-stone-500 font-medium ${isGrande ? 'text-xl' : 'text-base'}`}>
+                  <p className="font-bold text-stone-600">No hay habitaciones registradas en este turno aún.</p>
+                  <p className={`text-stone-400 mt-1 ${isGrande ? 'text-base' : 'text-xs md:text-sm'}`}>
                     Cuando una habitación sea ocupada o complete su turno entre las {turno.horario}, aparecerá aquí automáticamente.
                   </p>
                 </div>
@@ -475,13 +556,15 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left">
                     <thead>
-                      <tr className="bg-[#ECE6D5] text-[#26241C] border-b-2 border-[#CFC7AD] text-xs md:text-sm font-black uppercase tracking-wider">
-                        <th className="py-3 px-4 border-r border-[#DDD5BE]">1. Habitación</th>
-                        <th className="py-3 px-4 border-r border-[#DDD5BE]">2. Hora Entrada</th>
-                        <th className="py-3 px-4 border-r border-[#DDD5BE]">3. Hora Salida</th>
-                        <th className="py-3 px-4 border-r border-[#DDD5BE]">4. Consumiciones</th>
-                        <th className="py-3 px-4 border-r border-[#DDD5BE]">5. Vehículo</th>
-                        <th className="py-3 px-4 text-right">6. Total a Cobrar</th>
+                      <tr className={`bg-[#ECE6D5] text-[#26241C] border-b-2 border-[#CFC7AD] font-black uppercase tracking-wider ${
+                        isGrande ? 'text-sm md:text-base py-4' : 'text-xs md:text-sm py-3'
+                      }`}>
+                        <th className="py-3.5 px-4 border-r border-[#DDD5BE]">1. Habitación</th>
+                        <th className="py-3.5 px-4 border-r border-[#DDD5BE]">2. Hora Entrada</th>
+                        <th className="py-3.5 px-4 border-r border-[#DDD5BE]">3. Hora Salida</th>
+                        <th className="py-3.5 px-4 border-r border-[#DDD5BE]">4. Consumiciones</th>
+                        <th className="py-3.5 px-4 border-r border-[#DDD5BE]">5. Vehículo</th>
+                        <th className="py-3.5 px-4 text-right">6. Total a Cobrar</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#DDD5BE]">
@@ -499,16 +582,18 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             }`}
                           >
                             {/* 1. Habitación */}
-                            <td className="py-3.5 px-4 border-r border-[#DDD5BE] align-middle">
-                              <div className="flex items-center gap-2">
-                                <span className="font-black text-lg md:text-xl text-[#22201A]">
+                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle`}>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`font-black text-[#22201A] ${isGrande ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl'}`}>
                                   Hab. {pad2(row.habitacionId)}
                                 </span>
-                                <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-200 text-stone-700">
+                                <span className={`font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-200 text-stone-700 ${
+                                  isGrande ? 'text-sm' : 'text-xs'
+                                }`}>
                                   {row.categoria}
                                 </span>
                                 {row.esActivo && (
-                                  <span className="text-[11px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-600 text-white animate-pulse">
+                                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-600 text-white animate-pulse">
                                     Adentro
                                   </span>
                                 )}
@@ -516,30 +601,32 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             </td>
 
                             {/* 2. Hora Entrada */}
-                            <td className="py-3.5 px-4 border-r border-[#DDD5BE] align-middle whitespace-nowrap">
-                              <span className="font-bold text-stone-900 text-base md:text-lg">
+                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
+                              <span className={`font-black text-stone-900 ${isGrande ? 'text-xl md:text-2xl' : 'text-base md:text-lg'}`}>
                                 {row.horaEntradaStr}
                               </span>
                             </td>
 
                             {/* 3. Hora Salida */}
-                            <td className="py-3.5 px-4 border-r border-[#DDD5BE] align-middle whitespace-nowrap">
+                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
                               {row.esActivo ? (
                                 <div>
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs md:text-sm font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md font-black bg-emerald-100 text-emerald-800 border border-emerald-300 ${
+                                    isGrande ? 'text-base md:text-lg' : 'text-xs md:text-sm'
+                                  }`}>
                                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block"></span>
                                     En curso
                                   </span>
-                                  <span className="block text-xs text-stone-500 font-normal mt-0.5">
+                                  <span className={`block text-stone-500 font-normal mt-0.5 ${isGrande ? 'text-sm' : 'text-xs'}`}>
                                     {row.duracionStr}
                                   </span>
                                 </div>
                               ) : (
                                 <div>
-                                  <span className="font-bold text-stone-900 text-base md:text-lg">
+                                  <span className={`font-black text-stone-900 ${isGrande ? 'text-xl md:text-2xl' : 'text-base md:text-lg'}`}>
                                     {row.horaSalidaStr}
                                   </span>
-                                  <span className="block text-xs text-stone-500 font-normal mt-0.5">
+                                  <span className={`block text-stone-500 font-normal mt-0.5 ${isGrande ? 'text-sm' : 'text-xs'}`}>
                                     Duró {row.duracionStr} ({row.turnosCount} {row.turnosCount === 1 ? 'turno' : 'turnos'})
                                   </span>
                                 </div>
@@ -547,15 +634,15 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             </td>
 
                             {/* 4. Consumiciones */}
-                            <td className="py-3.5 px-4 border-r border-[#DDD5BE] align-middle max-w-xs">
+                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle max-w-sm`}>
                               {row.consumicionesTexto === 'Sin consumos' ? (
-                                <span className="text-stone-400 italic text-sm">-</span>
+                                <span className={`text-stone-400 italic ${isGrande ? 'text-base' : 'text-sm'}`}>-</span>
                               ) : (
                                 <div>
-                                  <span className="text-stone-800 font-bold block text-sm md:text-base leading-snug">
+                                  <span className={`text-stone-800 font-bold block leading-snug ${isGrande ? 'text-lg md:text-xl' : 'text-sm md:text-base'}`}>
                                     {row.consumicionesTexto}
                                   </span>
-                                  <span className="text-xs font-semibold text-stone-500">
+                                  <span className={`font-semibold text-stone-500 block mt-0.5 ${isGrande ? 'text-sm' : 'text-xs'}`}>
                                     Subtotal consumos: {formatPrice(row.consumicionesTotal)}
                                   </span>
                                 </div>
@@ -564,7 +651,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => onOpenConsumption(row.habitacionId)}
-                                  className="mt-1 text-xs font-bold text-[#C9A227] hover:text-[#a07f18] underline block"
+                                  className={`mt-1 font-bold text-[#C9A227] hover:text-[#a07f18] underline block ${isGrande ? 'text-sm' : 'text-xs'}`}
                                 >
                                   + Cargar más productos
                                 </button>
@@ -572,41 +659,47 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             </td>
 
                             {/* 5. Vehículo (Resalta claramente si fue cambiado) */}
-                            <td className="py-3.5 px-4 border-r border-[#DDD5BE] align-middle whitespace-nowrap">
+                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
                               {row.vehiculo === 'MOTO' ? (
                                 <div className="inline-flex flex-col">
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-black bg-amber-100 text-amber-900 border-2 border-amber-500 shadow-sm">
-                                    <VehicleIcon type="MOTO" size={17} />
+                                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-black bg-amber-100 text-amber-900 border-2 border-amber-500 shadow-sm ${
+                                    isGrande ? 'text-base md:text-lg' : 'text-sm'
+                                  }`}>
+                                    <VehicleIcon type="MOTO" size={isGrande ? 22 : 17} />
                                     <span>MOTO</span>
                                   </span>
-                                  <span className="text-[11px] font-black text-amber-700 tracking-wider uppercase mt-1">
-                                    ⚠️ Cambiado a Moto
+                                  <span className={`font-black text-amber-700 tracking-wider uppercase mt-1 ${isGrande ? 'text-xs md:text-sm' : 'text-[11px]'}`}>
+                                    Aviso: Cambiado a Moto
                                   </span>
                                 </div>
                               ) : row.vehiculo === 'DIDI' ? (
                                 <div className="inline-flex flex-col">
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-black bg-sky-100 text-sky-900 border-2 border-sky-500 shadow-sm">
-                                    <VehicleIcon type="DIDI" size={17} />
+                                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-black bg-sky-100 text-sky-900 border-2 border-sky-500 shadow-sm ${
+                                    isGrande ? 'text-base md:text-lg' : 'text-sm'
+                                  }`}>
+                                    <VehicleIcon type="DIDI" size={isGrande ? 22 : 17} />
                                     <span>DIDI</span>
                                   </span>
-                                  <span className="text-[11px] font-black text-sky-700 tracking-wider uppercase mt-1">
-                                    ⚠️ Cambiado a DiDi
+                                  <span className={`font-black text-sky-700 tracking-wider uppercase mt-1 ${isGrande ? 'text-xs md:text-sm' : 'text-[11px]'}`}>
+                                    Aviso: Cambiado a DiDi
                                   </span>
                                 </div>
                               ) : (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-bold bg-stone-100 text-stone-700 border border-stone-300">
-                                  <VehicleIcon type="AUTO" size={17} />
+                                <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-bold bg-stone-100 text-stone-700 border border-stone-300 ${
+                                  isGrande ? 'text-base md:text-lg' : 'text-sm'
+                                }`}>
+                                  <VehicleIcon type="AUTO" size={isGrande ? 22 : 17} />
                                   <span>Auto</span>
                                 </span>
                               )}
                             </td>
 
                             {/* 6. Total a Cobrar */}
-                            <td className="py-3.5 px-4 text-right align-middle whitespace-nowrap">
-                              <span className="font-black text-xl md:text-2xl text-[#1E3A22]">
+                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} text-right align-middle whitespace-nowrap`}>
+                              <span className={`font-black text-[#1E3A22] ${isGrande ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
                                 {formatPrice(row.totalACobrar)}
                               </span>
-                              <span className="block text-[11px] text-stone-500 font-normal">
+                              <span className={`block text-stone-500 font-normal ${isGrande ? 'text-xs md:text-sm' : 'text-[11px]'}`}>
                                 Base: {formatPrice(row.precioBase * row.turnosCount)}
                               </span>
                             </td>
@@ -614,13 +707,17 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                         );
                       })}
                     </tbody>
-                    {/* Pie de tabla con subtotal del turno */}
+                    {/* Pie de tabla con subtotal del turno en AZUL */}
                     <tfoot>
                       <tr className="bg-[#F3EEDF] border-t-2 border-[#DDD5BE] font-black">
-                        <td colSpan={5} className="py-3 px-4 text-right text-stone-700 uppercase tracking-wider text-xs md:text-sm">
+                        <td colSpan={5} className={`py-3.5 px-4 text-right text-stone-700 uppercase tracking-wider ${
+                          isGrande ? 'text-sm md:text-base' : 'text-xs md:text-sm'
+                        }`}>
                           Subtotal {turno.nombre} ({turno.countTurnos} habitaciones):
                         </td>
-                        <td className="py-3 px-4 text-right text-xl md:text-2xl text-[#1E3A22]">
+                        <td className={`py-3.5 px-4 text-right font-black text-[#1D4ED8] ${
+                          isGrande ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'
+                        }`}>
                           {formatPrice(turno.totalTurno)}
                         </td>
                       </tr>
@@ -635,4 +732,3 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
     </div>
   );
 };
-

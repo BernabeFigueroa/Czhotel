@@ -38,6 +38,18 @@ function getTodayArgentina(): string {
   }).format(new Date());
 }
 
+function getNextDayString(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + 1);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 function getStoredVehicles(): Record<number, 'AUTO' | 'MOTO' | 'DIDI'> {
   try {
     const raw = localStorage.getItem('chezz_active_vehicles');
@@ -132,14 +144,27 @@ export function useRoomsStream() {
     const dateToFetch = targetDate || selectedDate;
     try {
       const isCurrentDay = dateToFetch === getTodayArgentina();
-      const endpoint = isCurrentDay ? '/api/shifts/today' : `/api/shifts?date=${dateToFetch}`;
-      const res = await fetch(endpoint);
-      if (res.ok) {
-        const data: ShiftDTO[] = await res.json();
-        if (Array.isArray(data)) {
-          setShifts(data);
+      let combined: ShiftDTO[] = [];
+      if (isCurrentDay) {
+        const res = await fetch('/api/shifts/today');
+        if (res.ok) {
+          const d = await res.json();
+          if (Array.isArray(d)) combined = d;
         }
+      } else {
+        const nextDate = getNextDayString(dateToFetch);
+        const [res1, res2] = await Promise.all([
+          fetch(`/api/shifts?date=${dateToFetch}`),
+          fetch(`/api/shifts?date=${nextDate}`)
+        ]);
+        const d1 = res1.ok ? await res1.json() : [];
+        const d2 = res2.ok ? await res2.json() : [];
+        const map = new Map<number, ShiftDTO>();
+        if (Array.isArray(d1)) d1.forEach((s) => map.set(s.id, s));
+        if (Array.isArray(d2)) d2.forEach((s) => map.set(s.id, s));
+        combined = Array.from(map.values());
       }
+      setShifts(combined);
     } catch (err) {
       console.error('[RoomsStream] Error turnos:', err);
     }
