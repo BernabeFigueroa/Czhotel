@@ -12,6 +12,7 @@ interface EstelaViewProps {
   onSelectDate: (date: string) => void;
   onAdjustStock: (productId: number, delta: number) => void;
   onAddProduct: (nombre: string, precio: number, stock: number) => Promise<any>;
+  onSwitchToPlanilla?: () => void;
 }
 
 function formatHourMin(isoString: string): string {
@@ -109,6 +110,7 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
   onSelectDate,
   onAdjustStock,
   onAddProduct,
+  onSwitchToPlanilla,
 }) => {
   const [activeTab, setActiveTab] = useState<'rooms' | 'stock'>('rooms');
 
@@ -418,6 +420,20 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
               </article>
             );
           })}
+        </div>
+      )}
+
+      {/* Botón para cambiar a vista planilla en papel */}
+      {onSwitchToPlanilla && (
+        <div className="mt-8 mb-6 flex justify-center px-4">
+          <button
+            type="button"
+            onClick={onSwitchToPlanilla}
+            className="w-full max-w-xl py-4 px-6 bg-[#C9A227] hover:bg-[#d8af2c] active:bg-[#b58f1f] text-[#221E10] font-black text-lg md:text-xl rounded-xl shadow-lg flex items-center justify-center gap-3 transition-transform active:scale-95 border-2 border-[#221E10]/20"
+          >
+            <span className="text-2xl">📋</span>
+            <span>VER PLANILLA EN PAPEL (Turno Mañana / Tarde / Noche)</span>
+          </button>
         </div>
       )}
 

@@ -295,7 +295,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
   const totalMovimientosDia = rows.length;
 
   return (
-    <div className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-36 ${fontSize === 'grande' ? 'text-lg' : 'text-base'}`}>
+    <div className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${fontSize === 'grande' ? 'text-lg' : 'text-base'}`}>
       
       {/* Barra superior con controles y botón volver */}
       <header className="sticky top-0 z-30 bg-[#2B2822] text-[#F1ECE0] border-b-4 border-[#C9A227] px-4 py-3 shadow-md">
@@ -339,16 +339,6 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                 A+ Grande
               </button>
             </div>
-
-            {/* Botón imprimir */}
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="px-3 py-2 bg-[#33302A] hover:bg-[#4A4638] text-stone-100 font-semibold rounded-lg text-sm border border-[#4A4638] flex items-center gap-1.5 shadow"
-              title="Imprimir esta planilla en papel físico"
-            >
-              🖨️ Imprimir
-            </button>
           </div>
         </div>
       </header>
@@ -642,20 +632,6 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
           ))}
         </div>
       </div>
-
-      {/* ========================================================= */}
-      {/* BOTON FIJO ABAJO DEL TODO: CAMBIAR A VISTA PRINCIPAL       */}
-      {/* ========================================================= */}
-      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-[#211F1A]/95 backdrop-blur-md border-t-4 border-[#C9A227] p-3 md:p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.35)] flex justify-center">
-        <button
-          type="button"
-          onClick={onSwitchToMainView}
-          className="w-full max-w-2xl py-3.5 md:py-4 px-6 bg-[#C9A227] hover:bg-[#d8af2c] active:bg-[#b58f1f] text-[#221E10] font-black text-lg md:text-2xl rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-transform active:scale-95 border-2 border-[#221E10]/20"
-        >
-          <span className="text-2xl md:text-3xl">⬅️</span>
-          <span>VOLVER A LA VISTA PRINCIPAL (Habitaciones)</span>
-        </button>
-      </footer>
     </div>
   );
 };
