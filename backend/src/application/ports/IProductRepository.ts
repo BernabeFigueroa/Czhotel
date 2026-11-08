@@ -27,6 +27,7 @@ export interface IProductRepository {
   updateStock(id: number, delta: number): Promise<ProductDTO>;
   getConsumptionsByRoom(roomId: number): Promise<ConsumptionItemDTO[]>;
   addConsumption(roomId: number, productId: number): Promise<{ consumption: ConsumptionItemDTO; newStock: number }>;
+  removeConsumption(roomId: number, itemId: number, quantity: number): Promise<{ productoId: number; newStock: number } | null>;
   assignConsumptionsToShift(roomId: number, shiftId: number): Promise<void>;
   getConsumptionsForShifts(shiftIds: number[]): Promise<Map<number, ShiftItemSummary[]>>;
 }

@@ -364,6 +364,10 @@ button {
   margin-top: 4px;
 }
 
+.room-consumption-total {
+  padding-right: 40px;
+}
+
 .room-category {
   font-size: 0.74rem;
   font-weight: 600;
@@ -694,6 +698,12 @@ button {
   justify-content: space-between;
   font-size: 0.86rem;
   padding: 4px 0;
+}
+
+.current-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .current-total {

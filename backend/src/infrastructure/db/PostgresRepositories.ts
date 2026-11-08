@@ -299,6 +299,44 @@ export class PostgresProductRepository implements IProductRepository {
     }
   }
 
+  async removeConsumption(roomId: number, itemId: number, quantity: number): Promise<{ productoId: number; newStock: number } | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Lock the product before editing the consumption, as in addConsumption.
+      const product = await client.query(
+        `SELECT p.id FROM productos p JOIN consumos c ON c.producto_id = p.id
+         WHERE c.id = $1 AND c.habitacion_id = $2 AND c.turno_id IS NULL FOR UPDATE OF p`,
+        [itemId, roomId]
+      );
+      const params = [itemId, roomId, quantity];
+      const removed = await client.query(
+        quantity === 1
+          ? `DELETE FROM consumos WHERE id = $1 AND habitacion_id = $2 AND cantidad = $3 AND turno_id IS NULL RETURNING producto_id`
+          : `UPDATE consumos SET cantidad = cantidad - 1 WHERE id = $1 AND habitacion_id = $2 AND cantidad = $3 AND turno_id IS NULL RETURNING producto_id`,
+        params
+      );
+      if (product.rows.length === 0 || removed.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      const productoId = removed.rows[0].producto_id;
+      const stock = await client.query(
+        `UPDATE productos SET stock = stock + 1 WHERE id = $1 RETURNING stock`,
+        [productoId]
+      );
+      await client.query('COMMIT');
+      return { productoId, newStock: stock.rows[0].stock };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async assignConsumptionsToShift(roomId: number, shiftId: number): Promise<void> {
     await this.pool.query(
       `UPDATE consumos SET turno_id = $1 WHERE habitacion_id = $2 AND turno_id IS NULL`,

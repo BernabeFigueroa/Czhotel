@@ -194,10 +194,16 @@ export function createHttpServer(
   });
 
   // Cargar 1 consumo a la habitación ocupada
-  app.post('/api/rooms/:id/consumption', async (req, res) => {
+  app.route('/api/rooms/:id/consumption').post(updateRoomConsumption).patch(updateRoomConsumption);
+
+  async function updateRoomConsumption(req: express.Request, res: express.Response) {
     try {
       const roomId = parseInt(req.params.id, 10);
-      const { productoId } = req.body;
+      const { productoId, itemId, quantity } = req.body;
+      const removing = req.method === 'PATCH';
+      if (removing && (!Number.isSafeInteger(itemId) || itemId < 1 || !Number.isSafeInteger(quantity) || quantity < 1)) {
+        return res.status(400).json({ error: 'Consumo inválido' });
+      }
 
       const room = await roomRepo.findById(roomId);
       if (!room) {
@@ -208,7 +214,16 @@ export function createHttpServer(
         return res.status(400).json({ error: 'Solo se pueden cargar consumos a habitaciones ocupadas' });
       }
 
-      const result = await productRepo.addConsumption(roomId, Number(productoId));
+      const result = removing
+        ? await productRepo.removeConsumption(roomId, itemId, quantity)
+        : await productRepo.addConsumption(roomId, Number(productoId));
+      if (!result) {
+        return res.status(409).json({ error: 'El consumo cambió. Revisa la cantidad e inténtalo de nuevo.' });
+      }
+      const updatedStock = {
+        productoId: 'productoId' in result ? result.productoId : Number(productoId),
+        newStock: result.newStock
+      };
 
       // Obtener todos los consumos actualizados de la habitación
       const allItems = await productRepo.getConsumptionsByRoom(roomId);
@@ -221,18 +236,21 @@ export function createHttpServer(
           roomId,
           items: allItems,
           total,
-          updatedStock: {
-            productoId,
-            newStock: result.newStock
-          }
+          updatedStock
         }
       });
 
-      res.json({ success: true, consumption: result.consumption, allItems, total });
+      res.json({
+        success: true,
+        consumption: 'consumption' in result ? result.consumption : undefined,
+        allItems,
+        total,
+        updatedStock
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
-  });
+  }
 
   // Turnos por fecha con desglose de consumos (ideal para la vista de Estela)
   // Admite query param ?date=YYYY-MM-DD (por defecto, día actual de Argentina)

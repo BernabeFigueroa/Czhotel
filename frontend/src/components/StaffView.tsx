@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { RoomDTO } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { RoomDTO, RoomConsumptionDTO } from '../types';
 import { VehicleIcon } from './VehicleIcon';
 
 interface StaffViewProps {
   rooms: RoomDTO[];
+  consumptions: Record<number, RoomConsumptionDTO>;
   onOpenConsumption: (roomId: number) => void;
+}
+
+const TURN_DURATION_MS = 120 * 60_000;
+const WARNING_WINDOW_MS = 10 * 60_000;
+
+function createVoiceMessage(text: string): SpeechSynthesisUtterance {
+  const message = new SpeechSynthesisUtterance(text);
+  message.lang = 'es-AR';
+  return message;
 }
 
 function pad2(n: number): string {
@@ -42,9 +52,12 @@ function getCategoryName(room: RoomDTO): string {
 
 export const StaffView: React.FC<StaffViewProps> = ({
   rooms,
+  consumptions,
   onOpenConsumption,
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const announcedTurns = useRef(new Map<number, string>());
+  const voiceBlocked = useRef(false);
 
   // Reloj en vivo y refresco de minutos transcurridos
   useEffect(() => {
@@ -53,6 +66,60 @@ export const StaffView: React.FC<StaffViewProps> = ({
     }, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const retryVoice = () => {
+      if (voiceBlocked.current) {
+        voiceBlocked.current = false;
+        setCurrentTime(new Date());
+      }
+    };
+    window.addEventListener('click', retryVoice);
+    window.addEventListener('keydown', retryVoice);
+    return () => {
+      window.removeEventListener('click', retryVoice);
+      window.removeEventListener('keydown', retryVoice);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (voiceBlocked.current || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+
+    for (const room of rooms) {
+      const startedAt = room.turnoActualInicio;
+      if (room.estadoActual !== 'OCUPADA' || !startedAt) continue;
+
+      const remainingMs = Date.parse(startedAt) + TURN_DURATION_MS - currentTime.getTime();
+      if (!(remainingMs > 0 && remainingMs <= WARNING_WINDOW_MS)) continue;
+
+      const storageKey = `chezz:voice-warning:${room.id}`;
+      if (announcedTurns.current.get(room.id) === startedAt) continue;
+      try {
+        if (sessionStorage.getItem(storageKey) === startedAt) continue;
+      } catch {
+        // Keep deduplication in memory when storage is unavailable.
+      }
+
+      const minutes = Math.ceil(remainingMs / 60_000);
+      const timeLeft = minutes === 1 ? 'Queda un minuto' : `Quedan ${minutes} minutos`;
+      const message = createVoiceMessage(`${timeLeft} en la habitación ${room.id}`);
+      announcedTurns.current.set(room.id, startedAt);
+      message.onstart = () => {
+        try {
+          sessionStorage.setItem(storageKey, startedAt);
+        } catch {
+          // The in-memory record still prevents a repeat.
+        }
+      };
+      message.onerror = (event) => {
+        if (event.error === 'not-allowed') {
+          announcedTurns.current.delete(room.id);
+          voiceBlocked.current = true;
+        }
+      };
+      window.speechSynthesis.speak(message);
+    }
+  }, [currentTime, rooms]);
 
   const getClockString = () => {
     const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -86,6 +153,8 @@ export const StaffView: React.FC<StaffViewProps> = ({
             const isOccupied = room.estadoActual === 'OCUPADA';
             const statusKey = isOccupied ? 'ocupada' : 'libre';
             const category = getCategoryName(room);
+            const basePrice = room.precioBase || 35000;
+            const consumption = consumptions[room.id];
 
             let timeText = '';
             if (isOccupied && room.turnoActualInicio) {
@@ -103,9 +172,15 @@ export const StaffView: React.FC<StaffViewProps> = ({
                 </div>
 
                 <div className="room-price">
-                  {formatPrice(room.precioBase || 35000)}
+                  {formatPrice(basePrice)}
                   {category && <span className="room-category"> · {category}</span>}
                 </div>
+
+                {isOccupied && consumption && consumption.items.length > 0 && (
+                  <div className="room-price room-consumption-total">
+                    Total con consumición {formatPrice(basePrice + consumption.total)}
+                  </div>
+                )}
 
                 {timeText && <div className="room-time">{timeText}</div>}
 

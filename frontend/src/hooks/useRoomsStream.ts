@@ -235,13 +235,16 @@ export function useRoomsStream() {
     return null;
   };
 
-  // Agregar consumo a habitación
-  const addConsumptionToRoom = async (roomId: number, productoId: number) => {
+  const updateRoomConsumption = async (
+    roomId: number,
+    method: 'POST' | 'PATCH',
+    body: { productoId: number } | { itemId: number; quantity: number }
+  ) => {
     try {
       const res = await fetch(`/api/rooms/${roomId}/consumption`, {
-        method: 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productoId })
+        body: JSON.stringify(body)
       });
       if (res.ok) {
         const data = await res.json();
@@ -255,16 +258,23 @@ export function useRoomsStream() {
         }));
         setProducts((prev) =>
           prev.map((p) =>
-            p.id === productoId ? { ...p, stock: Math.max(0, p.stock - 1) } : p
+            p.id === data.updatedStock?.productoId ? { ...p, stock: data.updatedStock.newStock } : p
           )
         );
-        return data;
+        return true;
       }
+      if (res.status === 409) await fetchRoomConsumption(roomId);
     } catch (e) {
-      console.error(`[RoomsStream] Error agregando consumo a hab ${roomId}:`, e);
+      console.error(`[RoomsStream] Error actualizando consumo a hab ${roomId}:`, e);
     }
-    return null;
+    return false;
   };
+
+  const addConsumptionToRoom = (roomId: number, productoId: number) =>
+    updateRoomConsumption(roomId, 'POST', { productoId });
+
+  const removeConsumptionFromRoom = (roomId: number, itemId: number, quantity: number) =>
+    updateRoomConsumption(roomId, 'PATCH', { itemId, quantity });
 
   // Actualizar vehículo de la habitación
   const updateRoomVehicle = async (roomId: number, vehiculo: 'AUTO' | 'MOTO' | 'DIDI') => {
@@ -442,6 +452,7 @@ export function useRoomsStream() {
     adjustStock,
     addProduct,
     addConsumptionToRoom,
+    removeConsumptionFromRoom,
     updateRoomVehicle,
     fetchRoomConsumption,
     refreshRooms: fetchRooms

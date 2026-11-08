@@ -17,6 +17,7 @@ export const App: React.FC = () => {
     adjustStock,
     addProduct,
     addConsumptionToRoom,
+    removeConsumptionFromRoom,
     updateRoomVehicle,
   } = useRoomsStream();
 
@@ -119,6 +120,7 @@ export const App: React.FC = () => {
             ) : (
               <StaffView
                 rooms={rooms}
+                consumptions={consumptions}
                 onOpenConsumption={(id) => setActiveModalRoomId(id)}
               />
             )}
@@ -134,6 +136,7 @@ export const App: React.FC = () => {
               currentVehicle={rooms.find((r) => r.id === activeModalRoomId)?.vehiculo || 'AUTO'}
               onClose={() => setActiveModalRoomId(null)}
               onAddItem={(productId) => addConsumptionToRoom(activeModalRoomId, productId)}
+              onRemoveItem={(itemId, quantity) => removeConsumptionFromRoom(activeModalRoomId, itemId, quantity)}
               onUpdateVehicle={(vehicle) => updateRoomVehicle(activeModalRoomId, vehicle)}
             />
           )}

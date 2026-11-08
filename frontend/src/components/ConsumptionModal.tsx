@@ -8,7 +8,8 @@ interface ConsumptionModalProps {
   consumption?: RoomConsumptionDTO;
   currentVehicle?: VehicleType;
   onClose: () => void;
-  onAddItem: (productId: number) => void;
+  onAddItem: (productId: number) => Promise<boolean>;
+  onRemoveItem: (itemId: number, quantity: number) => Promise<boolean>;
   onUpdateVehicle: (vehicle: VehicleType) => void;
 }
 
@@ -23,10 +24,13 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
   currentVehicle = 'AUTO',
   onClose,
   onAddItem,
+  onRemoveItem,
   onUpdateVehicle,
 }) => {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>(currentVehicle);
   const userInteractedRef = React.useRef<boolean>(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const currentItems = consumption?.items || [];
   const currentTotal = consumption?.total || 0;
 
@@ -41,6 +45,16 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
     userInteractedRef.current = true;
     setSelectedVehicle(vehicle);
     onUpdateVehicle(vehicle);
+  };
+
+  const saveConsumption = async (update: () => Promise<boolean>) => {
+    setSaving(true);
+    setError('');
+    try {
+      if (!await update()) setError('No se pudo actualizar el consumo. Revisa la cantidad e inténtalo de nuevo.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -116,7 +130,8 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
                 <button
                   type="button"
                   className="plus-btn"
-                  onClick={() => onAddItem(prod.id)}
+                  disabled={saving}
+                  onClick={() => void saveConsumption(() => onAddItem(prod.id))}
                   aria-label={`Cargar ${prod.nombre}`}
                 >
                   <svg
@@ -134,6 +149,7 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
           })}
         </div>
 
+        {error && <p role="alert">{error}</p>}
         <div className="current-items">
           <div className="current-items-title">Consumo de este turno</div>
           {currentItems.length === 0 ? (
@@ -149,7 +165,18 @@ export const ConsumptionModal: React.FC<ConsumptionModalProps> = ({
                 <span>
                   {item.nombre} x{item.cantidad}
                 </span>
-                <span>{formatPrice(item.precioUnitario * item.cantidad)}</span>
+                <div className="current-item-actions">
+                  <span>{formatPrice(item.precioUnitario * item.cantidad)}</span>
+                  <button
+                    type="button"
+                    className="stock-btn"
+                    disabled={saving}
+                    onClick={() => void saveConsumption(() => onRemoveItem(item.id, item.cantidad))}
+                    aria-label={`Quitar una unidad de ${item.nombre}`}
+                  >
+                    −
+                  </button>
+                </div>
               </div>
             ))
           )}
