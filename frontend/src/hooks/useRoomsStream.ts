@@ -33,8 +33,8 @@ const INITIAL_PRODUCTS: ProductDTO[] = [
 ];
 
 function getTodayArgentina(): string {
-  return new Intl.DateTimeFormat('en-CA', { 
-    timeZone: 'America/Argentina/Buenos_Aires' 
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires'
   }).format(new Date());
 }
 
@@ -64,7 +64,7 @@ function setStoredVehicle(roomId: number, vehiculo: 'AUTO' | 'MOTO' | 'DIDI') {
     const current = getStoredVehicles();
     current[roomId] = vehiculo;
     localStorage.setItem('chezz_active_vehicles', JSON.stringify(current));
-  } catch {}
+  } catch { }
 }
 
 function clearStoredVehicle(roomId: number) {
@@ -72,7 +72,7 @@ function clearStoredVehicle(roomId: number) {
     const current = getStoredVehicles();
     delete current[roomId];
     localStorage.setItem('chezz_active_vehicles', JSON.stringify(current));
-  } catch {}
+  } catch { }
 }
 
 export function useRoomsStream() {
@@ -97,7 +97,7 @@ export function useRoomsStream() {
           setRooms(data.map((r) => {
             const isOccupied = (r.estadoActual || '').toUpperCase() === 'OCUPADA';
             const serverVeh = (r.vehiculo || '').toUpperCase();
-            
+
             // 1. Si el servidor ya tiene MOTO o DIDI confirmado, actualizar local
             if (serverVeh === 'MOTO' || serverVeh === 'DIDI') {
               setStoredVehicle(r.id, serverVeh as any);
@@ -274,7 +274,7 @@ export function useRoomsStream() {
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, vehiculo } : r))
       );
-      
+
       const res = await fetch(`/api/rooms/${roomId}/vehicle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

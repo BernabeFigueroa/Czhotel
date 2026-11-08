@@ -21,7 +21,7 @@ export const App: React.FC = () => {
   } = useRoomsStream();
 
   const [activeModalRoomId, setActiveModalRoomId] = useState<number | null>(null);
-  
+
   // Vista activa: 'principal' (grilla habitual de habitaciones) o 'planilla' (planilla en papel por turnos)
   const [activeView, setActiveView] = useState<'principal' | 'planilla'>('principal');
 
@@ -29,23 +29,23 @@ export const App: React.FC = () => {
     const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
     const urlHasSecret = path.includes('estelaibarra147') || hash.includes('estelaibarra147');
-    
+
     if (urlHasSecret) {
       try {
         localStorage.setItem('chezz_estela_authorized', 'true');
-      } catch (e) {}
+      } catch (e) { }
       return true;
     }
 
     // Si se abre desde el acceso directo instalado en el celular (modo standalone)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                         (window.navigator as any).standalone === true;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
     if (isStandalone) {
       try {
         if (localStorage.getItem('chezz_estela_authorized') === 'true') {
           return true;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     return false;
@@ -60,19 +60,19 @@ export const App: React.FC = () => {
       if (urlHasSecret) {
         try {
           localStorage.setItem('chezz_estela_authorized', 'true');
-        } catch (e) {}
+        } catch (e) { }
         setIsEstela(true);
         return;
       }
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                           (window.navigator as any).standalone === true;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true;
       if (isStandalone) {
         try {
           if (localStorage.getItem('chezz_estela_authorized') === 'true') {
             setIsEstela(true);
             return;
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       setIsEstela(false);
     };
@@ -102,42 +102,42 @@ export const App: React.FC = () => {
         />
       ) : (
         /* Vista Principal (por defecto) */
-        <div>
-          {isEstela ? (
-            <EstelaView 
-              rooms={rooms} 
-              shifts={shifts} 
+          <div>
+            {isEstela ? (
+              <EstelaView
+                rooms={rooms}
+                shifts={shifts}
+                products={products}
+                consumptions={consumptions}
+                selectedDate={selectedDate}
+                todayDate={todayDate}
+                onSelectDate={setSelectedDate}
+                onAdjustStock={adjustStock}
+                onAddProduct={addProduct}
+                onSwitchToPlanilla={() => setActiveView('planilla')}
+              />
+            ) : (
+              <StaffView
+                rooms={rooms}
+                onOpenConsumption={(id) => setActiveModalRoomId(id)}
+                onSwitchToPlanilla={() => setActiveView('planilla')}
+              />
+            )}
+          </div>
+      )}
+
+          {/* Modal de Carga de Consumo en Habitación Ocupada */}
+          {activeModalRoomId !== null && (
+            <ConsumptionModal
+              roomId={activeModalRoomId}
               products={products}
-              consumptions={consumptions}
-              selectedDate={selectedDate}
-              todayDate={todayDate}
-              onSelectDate={setSelectedDate}
-              onAdjustStock={adjustStock}
-              onAddProduct={addProduct}
-              onSwitchToPlanilla={() => setActiveView('planilla')}
-            />
-          ) : (
-            <StaffView
-              rooms={rooms}
-              onOpenConsumption={(id) => setActiveModalRoomId(id)}
-              onSwitchToPlanilla={() => setActiveView('planilla')}
+              consumption={consumptions[activeModalRoomId]}
+              currentVehicle={rooms.find((r) => r.id === activeModalRoomId)?.vehiculo || 'AUTO'}
+              onClose={() => setActiveModalRoomId(null)}
+              onAddItem={(productId) => addConsumptionToRoom(activeModalRoomId, productId)}
+              onUpdateVehicle={(vehicle) => updateRoomVehicle(activeModalRoomId, vehicle)}
             />
           )}
         </div>
-      )}
-
-      {/* Modal de Carga de Consumo en Habitación Ocupada */}
-      {activeModalRoomId !== null && (
-        <ConsumptionModal
-          roomId={activeModalRoomId}
-          products={products}
-          consumption={consumptions[activeModalRoomId]}
-          currentVehicle={rooms.find((r) => r.id === activeModalRoomId)?.vehiculo || 'AUTO'}
-          onClose={() => setActiveModalRoomId(null)}
-          onAddItem={(productId) => addConsumptionToRoom(activeModalRoomId, productId)}
-          onUpdateVehicle={(vehicle) => updateRoomVehicle(activeModalRoomId, vehicle)}
-        />
-      )}
-    </div>
-  );
+      );
 };
