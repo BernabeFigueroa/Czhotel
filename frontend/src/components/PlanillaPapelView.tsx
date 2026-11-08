@@ -214,6 +214,15 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
     } catch {}
   };
 
+  const [mobileLayout, setMobileLayout] = useState<'vertical' | 'horizontal'>(() => {
+    try { return localStorage.getItem('chezz_planilla_layout') === 'horizontal' ? 'horizontal' : 'vertical'; }
+    catch { return 'vertical'; }
+  });
+  const handleSetMobileLayout = (layout: 'vertical' | 'horizontal') => {
+    setMobileLayout(layout);
+    try { localStorage.setItem('chezz_planilla_layout', layout); } catch {}
+  };
+
   const isToday = selectedDate === todayDate;
   const yesterdayDate = getYesterdayString(todayDate);
   const isYesterday = selectedDate === yesterdayDate;
@@ -359,7 +368,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
   const isGrande = fontSize === 'grande';
 
   return (
-    <div data-font-size={fontSize} className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${isGrande ? 'text-xl' : 'text-base'}`}>
+    <div data-font-size={fontSize} data-mobile-layout={mobileLayout} className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${isGrande ? 'text-xl' : 'text-base'}`}>
       
       {/* Barra superior con controles y botón volver */}
       <header className="planilla-header sticky top-0 z-30 bg-[#2B2822] text-[#F1ECE0] border-b-4 border-[#C9A227] px-4 py-3.5 shadow-md">
@@ -381,38 +390,16 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Control de tamaño de letra agrandado */}
-            <div className="planilla-font-controls bg-[#211F1A] border-2 border-[#4A4638] rounded-xl p-1.5 flex items-center gap-1.5">
-              <span className="text-xs md:text-sm text-[#B8B2A0] px-2 font-bold">Letra:</span>
-              <button
-                type="button"
-                onClick={() => handleSetFontSize('normal')}
-                aria-pressed={fontSize === 'normal'}
-                className={`px-3 py-1.5 text-xs md:text-sm font-bold rounded-lg transition-colors ${
-                  fontSize === 'normal'
-                    ? 'bg-[#C9A227] text-[#221E10] font-black shadow'
-                    : 'text-stone-300 hover:bg-[#33302A]'
-                }`}
-              >
-                Normal
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSetFontSize('grande')}
-                aria-pressed={fontSize === 'grande'}
-                className={`px-3.5 py-1.5 text-sm md:text-base font-black rounded-lg transition-colors ${
-                  fontSize === 'grande'
-                    ? 'bg-[#C9A227] text-[#221E10] shadow'
-                    : 'text-stone-300 hover:bg-[#33302A]'
-                }`}
-              >
-                Muy grande
-              </button>
-            </div>
-          </div>
+
         </div>
       </header>
+
+      <div className="planilla-layout-controls" role="group" aria-label="Forma de ver la planilla">
+        <span>Ver planilla:</span>
+        <button type="button" aria-pressed={mobileLayout === 'vertical'} onClick={() => handleSetMobileLayout('vertical')}>Vertical</button>
+        <button type="button" aria-pressed={mobileLayout === 'horizontal'} onClick={() => handleSetMobileLayout('horizontal')}>Horizontal</button>
+        {mobileLayout === 'horizontal' && <p>Deslizá la tabla hacia los costados para ver todas las columnas.</p>}
+      </div>
 
       {/* Selector de fecha y Tarjeta de Gran Total */}
       <div className="max-w-7xl mx-auto px-3 md:px-6 pt-5">
@@ -554,7 +541,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="planilla-table-scroll overflow-x-auto" tabIndex={mobileLayout === 'horizontal' ? 0 : undefined} role="region" aria-label={`Registros del ${turno.nombre}`}>
                   <table className="planilla-table w-full border-collapse text-left">
                     <thead>
                       <tr className={`bg-[#ECE6D5] text-[#26241C] border-b-2 border-[#CFC7AD] font-black uppercase tracking-wider ${
@@ -721,6 +708,13 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
           ))}
         </div>
       </div>
+      <footer className="estela-footer-settings planilla-footer-settings">
+        <button type="button" className="estela-font-toggle-btn" onClick={() => handleSetFontSize(isGrande ? 'normal' : 'grande')}
+          title="Tocar para alternar el tamaño de la letra" aria-label={`Cambiar tamaño de texto. Actual: ${isGrande ? 'Muy grande' : 'Normal'}`}>
+          <span className="estela-font-toggle-icon" aria-hidden="true">Aa</span>
+          <span className="estela-font-toggle-label">Tamaño: {isGrande ? 'Muy grande' : 'Normal'}</span>
+        </button>
+      </footer>
     </div>
   );
 };
