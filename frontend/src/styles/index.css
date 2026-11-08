@@ -357,7 +357,8 @@ button {
   margin-top: 6px;
 }
 
-.room-turn-warning {
+.room-turn-warning,
+.room-turn-overdue {
   display: table;
   margin-top: 6px;
   padding: 3px 7px;
@@ -366,6 +367,11 @@ button {
   color: #4a3100;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.room-turn-overdue {
+  background-color: #ffdad4;
+  color: #651d16;
 }
 
 @media (prefers-reduced-motion: no-preference) {

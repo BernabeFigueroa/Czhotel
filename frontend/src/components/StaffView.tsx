@@ -10,13 +10,23 @@ interface StaffViewProps {
 
 const TURN_DURATION_MS = 120 * 60_000;
 const WARNING_WINDOW_MS = 10 * 60_000;
+const TURN_GRACE_MS = 40 * 60_000;
 
-function getWarningMinutes(room: RoomDTO, now: Date): number | null {
+function getTurnTiming(room: RoomDTO, now: Date) {
   if (room.estadoActual !== 'OCUPADA' || !room.turnoActualInicio) return null;
-  const remainingMs = Date.parse(room.turnoActualInicio) + TURN_DURATION_MS - now.getTime();
-  return remainingMs > 0 && remainingMs <= WARNING_WINDOW_MS
-    ? Math.ceil(remainingMs / 60_000)
-    : null;
+  const elapsedMs = now.getTime() - Date.parse(room.turnoActualInicio);
+  if (!Number.isFinite(elapsedMs)) return null;
+
+  // Each additional turn counts after the previous one ends plus 40 minutes.
+  const turn = Math.max(1, Math.floor((elapsedMs - TURN_GRACE_MS) / TURN_DURATION_MS) + 1);
+  const remainingMs = turn * TURN_DURATION_MS - elapsedMs;
+  return {
+    turn,
+    warningMinutes: remainingMs > 0 && remainingMs <= WARNING_WINDOW_MS
+      ? Math.ceil(remainingMs / 60_000)
+      : null,
+    overdueMinutes: remainingMs <= 0 ? Math.floor((elapsedMs - turn * TURN_DURATION_MS) / 60_000) : null,
+  };
 }
 
 function createVoiceMessage(text: string): SpeechSynthesisUtterance {
@@ -95,23 +105,25 @@ export const StaffView: React.FC<StaffViewProps> = ({
 
     for (const room of rooms) {
       const startedAt = room.turnoActualInicio;
-      const minutes = getWarningMinutes(room, currentTime);
-      if (!startedAt || minutes === null) continue;
+      const timing = getTurnTiming(room, currentTime);
+      if (!startedAt || !timing || timing.warningMinutes === null) continue;
+      const minutes = timing.warningMinutes;
+      const turnKey = timing.turn === 1 ? startedAt : `${startedAt}:${timing.turn}`;
 
       const storageKey = `chezz:voice-warning:${room.id}`;
-      if (announcedTurns.current.get(room.id) === startedAt) continue;
+      if (announcedTurns.current.get(room.id) === turnKey) continue;
       try {
-        if (sessionStorage.getItem(storageKey) === startedAt) continue;
+        if (sessionStorage.getItem(storageKey) === turnKey) continue;
       } catch {
         // Keep deduplication in memory when storage is unavailable.
       }
 
       const timeLeft = minutes === 1 ? 'Queda un minuto' : `Quedan ${minutes} minutos`;
       const message = createVoiceMessage(`${timeLeft} en la habitación ${room.id}`);
-      announcedTurns.current.set(room.id, startedAt);
+      announcedTurns.current.set(room.id, turnKey);
       message.onstart = () => {
         try {
-          sessionStorage.setItem(storageKey, startedAt);
+          sessionStorage.setItem(storageKey, turnKey);
         } catch {
           // The in-memory record still prevents a repeat.
         }
@@ -160,7 +172,10 @@ export const StaffView: React.FC<StaffViewProps> = ({
             const category = getCategoryName(room);
             const basePrice = room.precioBase || 35000;
             const consumption = consumptions[room.id];
-            const warningMinutes = getWarningMinutes(room, currentTime);
+            const timing = getTurnTiming(room, currentTime);
+            const turn = timing?.turn ?? 1;
+            const warningMinutes = timing?.warningMinutes ?? null;
+            const overdueMinutes = timing?.overdueMinutes ?? null;
 
             let timeText = '';
             if (isOccupied && room.turnoActualInicio) {
@@ -184,11 +199,18 @@ export const StaffView: React.FC<StaffViewProps> = ({
 
                 {isOccupied && consumption && consumption.items.length > 0 && (
                   <div className="room-price room-consumption-total">
-                    Total con consumición {formatPrice(basePrice + consumption.total)}
+                    Total con consumición {formatPrice(basePrice * turn + consumption.total)}
                   </div>
                 )}
 
                 {timeText && <div className="room-time">{timeText}</div>}
+
+                {turn > 1 && <div className="room-time">Turno {turn}</div>}
+                {overdueMinutes !== null && (
+                  <div className="room-turn-overdue">
+                    {overdueMinutes === 0 ? 'Turno vencido' : `Turno pasado por ${overdueMinutes} min`}
+                  </div>
+                )}
 
                 {warningMinutes !== null && (
                   <div className="room-turn-warning">
