@@ -11,6 +11,14 @@ interface StaffViewProps {
 const TURN_DURATION_MS = 120 * 60_000;
 const WARNING_WINDOW_MS = 10 * 60_000;
 
+function getWarningMinutes(room: RoomDTO, now: Date): number | null {
+  if (room.estadoActual !== 'OCUPADA' || !room.turnoActualInicio) return null;
+  const remainingMs = Date.parse(room.turnoActualInicio) + TURN_DURATION_MS - now.getTime();
+  return remainingMs > 0 && remainingMs <= WARNING_WINDOW_MS
+    ? Math.ceil(remainingMs / 60_000)
+    : null;
+}
+
 function createVoiceMessage(text: string): SpeechSynthesisUtterance {
   const message = new SpeechSynthesisUtterance(text);
   message.lang = 'es-AR';
@@ -87,10 +95,8 @@ export const StaffView: React.FC<StaffViewProps> = ({
 
     for (const room of rooms) {
       const startedAt = room.turnoActualInicio;
-      if (room.estadoActual !== 'OCUPADA' || !startedAt) continue;
-
-      const remainingMs = Date.parse(startedAt) + TURN_DURATION_MS - currentTime.getTime();
-      if (!(remainingMs > 0 && remainingMs <= WARNING_WINDOW_MS)) continue;
+      const minutes = getWarningMinutes(room, currentTime);
+      if (!startedAt || minutes === null) continue;
 
       const storageKey = `chezz:voice-warning:${room.id}`;
       if (announcedTurns.current.get(room.id) === startedAt) continue;
@@ -100,7 +106,6 @@ export const StaffView: React.FC<StaffViewProps> = ({
         // Keep deduplication in memory when storage is unavailable.
       }
 
-      const minutes = Math.ceil(remainingMs / 60_000);
       const timeLeft = minutes === 1 ? 'Queda un minuto' : `Quedan ${minutes} minutos`;
       const message = createVoiceMessage(`${timeLeft} en la habitación ${room.id}`);
       announcedTurns.current.set(room.id, startedAt);
@@ -155,6 +160,7 @@ export const StaffView: React.FC<StaffViewProps> = ({
             const category = getCategoryName(room);
             const basePrice = room.precioBase || 35000;
             const consumption = consumptions[room.id];
+            const warningMinutes = getWarningMinutes(room, currentTime);
 
             let timeText = '';
             if (isOccupied && room.turnoActualInicio) {
@@ -183,6 +189,12 @@ export const StaffView: React.FC<StaffViewProps> = ({
                 )}
 
                 {timeText && <div className="room-time">{timeText}</div>}
+
+                {warningMinutes !== null && (
+                  <div className="room-turn-warning">
+                    {warningMinutes === 1 ? 'Queda 1 min' : `Quedan ${warningMinutes} min`}
+                  </div>
+                )}
 
                 {isOccupied && (
                   <div className="room-vehicle-chip">

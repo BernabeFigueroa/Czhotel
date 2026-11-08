@@ -357,6 +357,27 @@ button {
   margin-top: 6px;
 }
 
+.room-turn-warning {
+  display: table;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background-color: #ffe5a3;
+  color: #4a3100;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .room-turn-warning {
+    animation: room-warning-pulse 1.2s ease-in-out 3;
+  }
+
+  @keyframes room-warning-pulse {
+    50% { background-color: #f0bf55; }
+  }
+}
+
 .room-price {
   font-size: 0.88rem;
   font-weight: 700;
