@@ -99,7 +99,6 @@ export const App: React.FC = () => {
           todayDate={todayDate}
           onSelectDate={setSelectedDate}
           onSwitchToMainView={() => setActiveView('principal')}
-          onOpenConsumption={(id) => setActiveModalRoomId(id)}
         />
       ) : (
         /* Vista Principal (por defecto) */

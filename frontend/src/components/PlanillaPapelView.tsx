@@ -11,7 +11,6 @@ interface PlanillaPapelViewProps {
   todayDate: string;
   onSelectDate: (date: string) => void;
   onSwitchToMainView: () => void;
-  onOpenConsumption?: (roomId: number) => void;
 }
 
 type TurnoType = 'MANANA' | 'TARDE' | 'NOCHE';
@@ -198,7 +197,6 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
   todayDate,
   onSelectDate,
   onSwitchToMainView,
-  onOpenConsumption,
 }) => {
   // Persistir la preferencia de tamaño de letra de la señora en localStorage
   const [fontSize, setFontSize] = useState<'normal' | 'grande'>(() => {
@@ -361,13 +359,13 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
   const isGrande = fontSize === 'grande';
 
   return (
-    <div className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${isGrande ? 'text-xl' : 'text-base'}`}>
+    <div data-font-size={fontSize} className={`planilla-wrapper min-h-screen bg-[#FBF9F2] text-[#22201A] pb-12 ${isGrande ? 'text-xl' : 'text-base'}`}>
       
       {/* Barra superior con controles y botón volver */}
-      <header className="sticky top-0 z-30 bg-[#2B2822] text-[#F1ECE0] border-b-4 border-[#C9A227] px-4 py-3.5 shadow-md">
+      <header className="planilla-header sticky top-0 z-30 bg-[#2B2822] text-[#F1ECE0] border-b-4 border-[#C9A227] px-4 py-3.5 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           
-          <div className="flex items-center gap-3">
+          <div className="planilla-heading flex items-center gap-3">
             <button
               type="button"
               onClick={onSwitchToMainView}
@@ -385,11 +383,12 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
 
           <div className="flex items-center gap-2">
             {/* Control de tamaño de letra agrandado */}
-            <div className="bg-[#211F1A] border-2 border-[#4A4638] rounded-xl p-1.5 flex items-center gap-1.5">
+            <div className="planilla-font-controls bg-[#211F1A] border-2 border-[#4A4638] rounded-xl p-1.5 flex items-center gap-1.5">
               <span className="text-xs md:text-sm text-[#B8B2A0] px-2 font-bold">Letra:</span>
               <button
                 type="button"
                 onClick={() => handleSetFontSize('normal')}
+                aria-pressed={fontSize === 'normal'}
                 className={`px-3 py-1.5 text-xs md:text-sm font-bold rounded-lg transition-colors ${
                   fontSize === 'normal'
                     ? 'bg-[#C9A227] text-[#221E10] font-black shadow'
@@ -401,6 +400,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleSetFontSize('grande')}
+                aria-pressed={fontSize === 'grande'}
                 className={`px-3.5 py-1.5 text-sm md:text-base font-black rounded-lg transition-colors ${
                   fontSize === 'grande'
                     ? 'bg-[#C9A227] text-[#221E10] shadow'
@@ -419,10 +419,10 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
         <div className="bg-white border-2 border-[#DDD5BE] rounded-xl p-4 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
           
           {/* Selector de fechas rápido (sin emojis) */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`font-bold text-stone-700 mr-1 ${isGrande ? 'text-lg md:text-xl' : 'text-sm md:text-base'}`}>
+          <div className="planilla-date-controls flex items-center gap-2 flex-wrap">
+            <label htmlFor="planilla-date" className={`font-bold text-stone-700 mr-1 ${isGrande ? 'text-lg md:text-xl' : 'text-sm md:text-base'}`}>
               Fecha de la planilla:
-            </span>
+            </label>
             <button
               type="button"
               onClick={() => onSelectDate(todayDate)}
@@ -450,6 +450,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
               Ayer
             </button>
             <input
+              id="planilla-date"
               type="date"
               value={selectedDate}
               onChange={(e) => e.target.value && onSelectDate(e.target.value)}
@@ -460,7 +461,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
           </div>
 
           {/* Gran Total del Día */}
-          <div className="bg-[#FAF6EC] border-2 border-[#C9A227] rounded-xl px-5 py-3 flex items-center gap-5 shadow-sm">
+          <div className="planilla-daily-total bg-[#FAF6EC] border-2 border-[#C9A227] rounded-xl px-5 py-3 flex items-center gap-5 shadow-sm">
             <div>
               <span className={`block uppercase tracking-wider font-extrabold text-[#6B6552] ${isGrande ? 'text-xs md:text-sm' : 'text-xs'}`}>
                 Total General Facturado
@@ -521,7 +522,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                 </div>
 
                 {/* Subtotal del Turno en AZUL */}
-                <div className="flex items-center gap-5 text-right">
+                <div className="planilla-shift-total flex items-center gap-5 text-right">
                   <div>
                     <span className={`block uppercase tracking-wider font-extrabold opacity-75 ${isGrande ? 'text-xs md:text-sm' : 'text-xs'}`}>
                       Turnos registrados
@@ -554,7 +555,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left">
+                  <table className="planilla-table w-full border-collapse text-left">
                     <thead>
                       <tr className={`bg-[#ECE6D5] text-[#26241C] border-b-2 border-[#CFC7AD] font-black uppercase tracking-wider ${
                         isGrande ? 'text-sm md:text-base py-4' : 'text-xs md:text-sm py-3'
@@ -582,7 +583,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             }`}
                           >
                             {/* 1. Habitación */}
-                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle`}>
+                            <td data-label="Habitación" className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle`}>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`font-black text-[#22201A] ${isGrande ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl'}`}>
                                   Hab. {pad2(row.habitacionId)}
@@ -601,14 +602,14 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             </td>
 
                             {/* 2. Hora Entrada */}
-                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
+                            <td data-label="Entrada" className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
                               <span className={`font-black text-stone-900 ${isGrande ? 'text-xl md:text-2xl' : 'text-base md:text-lg'}`}>
                                 {row.horaEntradaStr}
                               </span>
                             </td>
 
                             {/* 3. Hora Salida */}
-                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
+                            <td data-label="Salida" className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
                               {row.esActivo ? (
                                 <div>
                                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md font-black bg-emerald-100 text-emerald-800 border border-emerald-300 ${
@@ -634,9 +635,9 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             </td>
 
                             {/* 4. Consumiciones */}
-                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle max-w-sm`}>
+                            <td data-label="Consumiciones" className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle max-w-sm`}>
                               {row.consumicionesTexto === 'Sin consumos' ? (
-                                <span className={`text-stone-400 italic ${isGrande ? 'text-base' : 'text-sm'}`}>-</span>
+                                <span className={`text-stone-600 italic ${isGrande ? 'text-base' : 'text-sm'}`}>Sin consumos</span>
                               ) : (
                                 <div>
                                   <span className={`text-stone-800 font-bold block leading-snug ${isGrande ? 'text-lg md:text-xl' : 'text-sm md:text-base'}`}>
@@ -647,19 +648,10 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                                   </span>
                                 </div>
                               )}
-                              {row.esActivo && onOpenConsumption && (
-                                <button
-                                  type="button"
-                                  onClick={() => onOpenConsumption(row.habitacionId)}
-                                  className={`mt-1 font-bold text-[#C9A227] hover:text-[#a07f18] underline block ${isGrande ? 'text-sm' : 'text-xs'}`}
-                                >
-                                  + Cargar más productos
-                                </button>
-                              )}
                             </td>
 
                             {/* 5. Vehículo (Resalta claramente si fue cambiado) */}
-                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
+                            <td data-label="Vehículo" className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} border-r border-[#DDD5BE] align-middle whitespace-nowrap`}>
                               {row.vehiculo === 'MOTO' ? (
                                 <div className="inline-flex flex-col">
                                   <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-black bg-amber-100 text-amber-900 border-2 border-amber-500 shadow-sm ${
@@ -695,7 +687,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                             </td>
 
                             {/* 6. Total a Cobrar */}
-                            <td className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} text-right align-middle whitespace-nowrap`}>
+                            <td data-label="Total a cobrar" className={`${isGrande ? 'py-5 px-5' : 'py-3.5 px-4'} text-right align-middle whitespace-nowrap`}>
                               <span className={`font-black text-[#1E3A22] ${isGrande ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
                                 {formatPrice(row.totalACobrar)}
                               </span>
