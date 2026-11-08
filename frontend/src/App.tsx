@@ -23,7 +23,7 @@ export const App: React.FC = () => {
   const [activeModalRoomId, setActiveModalRoomId] = useState<number | null>(null);
 
   // Vista activa: 'principal' (grilla habitual de habitaciones) o 'planilla' (planilla en papel por turnos)
-  const [activeView, setActiveView] = useState<'principal' | 'planilla'>('principal');
+  const [activeView, setActiveView] = useState<'principal' | 'planilla'>('planilla');
 
   const [isEstela, setIsEstela] = useState<boolean>(() => {
     const path = window.location.pathname.toLowerCase();
@@ -54,6 +54,7 @@ export const App: React.FC = () => {
   // Escuchar cambios de ruta o popstate
   useEffect(() => {
     const checkPath = () => {
+      setActiveView('planilla');
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       const urlHasSecret = path.includes('estelaibarra147') || hash.includes('estelaibarra147');
@@ -87,7 +88,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-shell min-h-screen">
-      {activeView === 'planilla' ? (
+      {isEstela && activeView === 'planilla' ? (
         /* Vista Planilla en Papel por Turnos (Mañana, Tarde, Noche) */
         <PlanillaPapelView
           rooms={rooms}
@@ -120,7 +121,6 @@ export const App: React.FC = () => {
               <StaffView
                 rooms={rooms}
                 onOpenConsumption={(id) => setActiveModalRoomId(id)}
-                onSwitchToPlanilla={() => setActiveView('planilla')}
               />
             )}
           </div>

@@ -204,6 +204,11 @@ export const EstelaView: React.FC<EstelaViewProps> = ({
 
           <div className="estela-header-actions">
             <nav className="estela-tabs">
+              {onSwitchToPlanilla && (
+                <button type="button" className="estela-tab-btn" onClick={onSwitchToPlanilla}>
+                  Planilla
+                </button>
+              )}
               <button
                 type="button"
                 className={`estela-tab-btn ${activeTab === 'rooms' ? 'active' : ''}`}

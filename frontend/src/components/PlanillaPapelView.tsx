@@ -315,7 +315,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
           habitacionId: r.id,
           categoria,
           horaEntradaStr: formatHourMin(r.turnoActualInicio),
-          horaSalidaStr: '🟢 EN CURSO (Adentro)',
+          horaSalidaStr: 'EN CURSO (Adentro)',
           esActivo: true,
           duracionStr: `Hace ${formatDuration(minsElapsed)}`,
           consumicionesTexto: consumosStr,
@@ -372,9 +372,9 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
               type="button"
               onClick={onSwitchToMainView}
               className="px-4 py-2.5 bg-[#C9A227] hover:bg-[#d8af2c] active:bg-[#b58f1f] text-[#221E10] font-black rounded-xl flex items-center gap-2 shadow active:scale-95 transition-all text-base md:text-xl border-2 border-[#221E10]/20"
-              title="Volver a la vista de cuadrícula de habitaciones"
+              title="Ver el estado y el historial de las habitaciones"
             >
-              ⬅️ Volver a Habitaciones
+              Ver habitaciones
             </button>
             <div>
               <h1 className="font-black text-xl md:text-3xl text-white tracking-wide">
@@ -396,7 +396,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                     : 'text-stone-300 hover:bg-[#33302A]'
                 }`}
               >
-                A Normal
+                Normal
               </button>
               <button
                 type="button"
@@ -407,7 +407,7 @@ export const PlanillaPapelView: React.FC<PlanillaPapelViewProps> = ({
                     : 'text-stone-300 hover:bg-[#33302A]'
                 }`}
               >
-                A+ Muy Grande
+                Muy grande
               </button>
             </div>
           </div>

@@ -5,7 +5,6 @@ import { VehicleIcon } from './VehicleIcon';
 interface StaffViewProps {
   rooms: RoomDTO[];
   onOpenConsumption: (roomId: number) => void;
-  onSwitchToPlanilla?: () => void;
 }
 
 function pad2(n: number): string {
@@ -44,7 +43,6 @@ function getCategoryName(room: RoomDTO): string {
 export const StaffView: React.FC<StaffViewProps> = ({
   rooms,
   onOpenConsumption,
-  onSwitchToPlanilla,
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -142,19 +140,7 @@ export const StaffView: React.FC<StaffViewProps> = ({
           })}
         </div>
 
-        {/* Botón para cambiar a vista planilla justo debajo de las habitaciones 16, 17, 18 */}
-        {onSwitchToPlanilla && (
-          <div className="mt-8 mb-6 flex justify-center">
-            <button
-              type="button"
-              onClick={onSwitchToPlanilla}
-              className="w-full max-w-xl py-4 px-6 bg-[#C9A227] hover:bg-[#d8af2c] active:bg-[#b58f1f] text-[#221E10] font-black text-lg md:text-xl rounded-xl shadow-lg flex items-center justify-center gap-3 transition-transform active:scale-95 border-2 border-[#221E10]/20"
-            >
-              <span className="text-2xl">📋</span>
-              <span>VER PLANILLA EN PAPEL (Turno Mañana / Tarde / Noche)</span>
-            </button>
-          </div>
-        )}
+
       </div>
     </section>
   );
